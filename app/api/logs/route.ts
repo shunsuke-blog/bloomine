@@ -5,6 +5,7 @@ import { GUIDE_SYSTEM_PROMPT } from "@/lib/prompts";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
+<<<<<<< HEAD
 // 開発用モック返答（DEV_MOCK_AI=true のとき使用）
 const MOCK_RESPONSES = [
   "今日もここに来てくれたんですね。その一歩が、温室の土を少し温めました。…今夜、あなたの胸の中で一番重く感じているものは、何でしょう？",
@@ -16,6 +17,8 @@ const MOCK_RESPONSES = [
   "7日間、ここに来てくれましたね。あなたの言葉はすべて、この温室の土になりました。…明日の朝、目覚めたとき、どんな気持ちでいたいですか？",
 ];
 
+=======
+>>>>>>> e482ee1a65461a9aef608257ecce7b58a3b34e5c
 async function getWeekNumber(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<number> {
   const { data } = await supabase
     .from("daily_logs")
@@ -33,6 +36,7 @@ async function getWeekNumber(supabase: Awaited<ReturnType<typeof createClient>>,
   return Math.floor(diffDays / 7) + 1;
 }
 
+<<<<<<< HEAD
 async function getLogCountForWeek(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -46,6 +50,8 @@ async function getLogCountForWeek(
   return count ?? 0;
 }
 
+=======
+>>>>>>> e482ee1a65461a9aef608257ecce7b58a3b34e5c
 export async function POST(req: Request) {
   try {
     const { transcript, emotion_score } = await req.json();
@@ -54,6 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "メッセージが空です" }, { status: 400 });
     }
 
+<<<<<<< HEAD
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -91,6 +98,41 @@ export async function POST(req: Request) {
         .select("id")
         .single();
       log_id = log?.id ?? null;
+=======
+    // Gemini で AI 返答を生成
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: GUIDE_SYSTEM_PROMPT,
+    });
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: transcript }] }],
+    });
+    const ai_response = result.response.text();
+
+    // 認証済みの場合は DB に保存
+    let log_id: string | null = null;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const week_number = await getWeekNumber(supabase, user.id);
+        const { data: log } = await supabase
+          .from("daily_logs")
+          .insert({
+            user_id: user.id,
+            transcript,
+            emotion_score: emotion_score ?? null,
+            ai_response,
+            week_number,
+          })
+          .select("id")
+          .single();
+        log_id = log?.id ?? null;
+      }
+    } catch (dbError) {
+      console.error("DB save skipped:", dbError);
+>>>>>>> e482ee1a65461a9aef608257ecce7b58a3b34e5c
     }
 
     return NextResponse.json({ text: ai_response, log_id });

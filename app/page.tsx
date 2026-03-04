@@ -16,6 +16,20 @@ type DayStatus = {
   alreadyAnalyzed: boolean;
 };
 
+type Seed = {
+  seed_name: string;
+  os_description: string;
+  logic_reflection: string;
+  environment_condition: string;
+};
+
+type DayStatus = {
+  logCount: number;   // 今週のログ数
+  weekNumber: number;
+  isDay7Ready: boolean; // 7日分揃っているか
+  alreadyAnalyzed: boolean;
+};
+
 export default function NightGreenhouse() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -110,6 +124,7 @@ export default function NightGreenhouse() {
   if (seed) {
     return (
       <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6 space-y-6">
+<<<<<<< HEAD
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
         <p className="text-xs text-slate-500 tracking-widest">— 芽吹き —</p>
 
@@ -214,6 +229,107 @@ export default function NightGreenhouse() {
         </div>
       </div>
 
+=======
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
+        <p className="text-xs text-slate-500 tracking-widest">— 芽吹き —</p>
+
+        <div className="max-w-md w-full space-y-4">
+          <div className="text-center py-6">
+            <p className="text-xs text-slate-500 mb-2">あなたの強みのタネ</p>
+            <p className="text-3xl font-light text-emerald-300 tracking-wider">{seed.seed_name}</p>
+          </div>
+
+          <div className="p-5 bg-slate-900/40 rounded-2xl border border-emerald-900/30 space-y-1">
+            <p className="text-xs text-emerald-600 tracking-wider">OS（性質）</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{seed.os_description}</p>
+          </div>
+
+          <div className="p-5 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-1">
+            <p className="text-xs text-slate-500 tracking-wider">過去の苦しみの再定義</p>
+            <p className="text-sm text-slate-400 leading-relaxed">{seed.logic_reflection}</p>
+          </div>
+
+          <div className="p-5 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-1">
+            <p className="text-xs text-slate-500 tracking-wider">輝ける土壌</p>
+            <p className="text-sm text-slate-400 leading-relaxed">{seed.environment_condition}</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6 space-y-8">
+      <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
+
+      {/* 今週の進捗 */}
+      {dayStatus && (
+        <div className="flex gap-2 items-center">
+          {Array.from({ length: 7 }, (_, i) => (
+            <div
+              key={i}
+              className={`w-3 h-3 rounded-full transition-all ${
+                i < dayStatus.logCount
+                  ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
+                  : "bg-slate-800"
+              }`}
+            />
+          ))}
+          <span className="text-xs text-slate-600 ml-1">{dayStatus.logCount}/7日</span>
+        </div>
+      )}
+
+      {/* Day7 分析ボタン */}
+      {dayStatus?.isDay7Ready && !dayStatus.alreadyAnalyzed && (
+        <div className="max-w-md w-full">
+          <button
+            onClick={runAnalyze}
+            disabled={isAnalyzing}
+            className="w-full py-4 bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all disabled:opacity-50"
+          >
+            {isAnalyzing ? "タネが芽吹いています..." : "✦ 7日間のタネを見る"}
+          </button>
+          <p className="text-center text-xs text-slate-600 mt-2">
+            一期一会。分析は一度だけです。
+          </p>
+        </div>
+      )}
+
+      {/* AI の返答エリア */}
+      <div className="max-w-md w-full min-h-[150px] p-6 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
+        {isLoading ? (
+          <p className="text-emerald-500/50 animate-pulse">案内人があなたの言葉を噛み締めています...</p>
+        ) : (
+          <p className="text-slate-300 leading-relaxed italic">
+            {aiResponse || "「お帰りなさい。今日はどんな一日でしたか？」"}
+          </p>
+        )}
+      </div>
+
+      {/* 感情スコア選択 */}
+      <div className="max-w-md w-full space-y-3">
+        <p className="text-xs text-slate-500 text-center">
+          今の気持ちを数字で教えてください
+          <span className="ml-2 text-slate-600">（1: とても辛い　10: とても良い）</span>
+        </p>
+        <div className="flex justify-between gap-1">
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              onClick={() => setEmotionScore(n)}
+              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${
+                emotionScore === n
+                  ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(52,211,153,0.4)]"
+                  : "bg-slate-900/60 text-slate-500 border border-slate-800 hover:border-emerald-900"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+>>>>>>> e482ee1a65461a9aef608257ecce7b58a3b34e5c
       {/* 録音ボタン */}
       <div className="flex flex-col items-center gap-3">
         <button
