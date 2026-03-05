@@ -8,6 +8,10 @@ alter table public.flower_collection rename column seed_name to flower_name;
 alter table public.flower_collection
   drop constraint if exists seeds_collection_user_id_week_number_key;
 
+-- week_number カラムを削除（花は週をまたいで蓄積するため不要）
+alter table public.flower_collection
+  drop column if exists week_number;
+
 -- level カラムを追加（何度この強みが抽出されたか）
 alter table public.flower_collection
   add column if not exists level int not null default 1;

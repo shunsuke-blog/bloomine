@@ -60,8 +60,7 @@ export async function POST(req: Request) {
     const result = await model.generateContent(prompt);
     const { fragments } = JSON.parse(result.response.text()) as {
       fragments: {
-        log_index: number;
-        root: string;
+        roots: { log_index: number; root: string }[];
         is_new_flower: boolean;
         flower_id?: string;
         flower_name?: string;
@@ -72,18 +71,19 @@ export async function POST(req: Request) {
     };
 
     // 各断片を処理: 新しい花を作成 or 既存の花のレベルを上げる
-    const flowerCache: Record<string, string> = {}; // flower_name → id（同週で重複命名を防ぐ）
+    const flowerCache: Record<string, string> = {}; // flower_name → id（同回で重複命名を防ぐ）
 
     for (const fragment of fragments) {
-      const log = logs[fragment.log_index];
-      if (!log) continue;
+      const rootEntries = (fragment.roots ?? [])
+        .map(r => ({ log: logs[r.log_index], root: r.root }))
+        .filter(r => r.log != null);
+      if (rootEntries.length === 0) continue;
 
       let flower_id: string;
 
       if (!fragment.is_new_flower && fragment.flower_id) {
         // 既存の花に紐付け → level++
         flower_id = fragment.flower_id;
-        // level を +1
         const { data: current } = await supabase
           .from("flower_collection")
           .select("level")
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
             .eq("id", flower_id);
         }
       } else {
-        // 新しい花を作成（同じ名前が今週すでに作られていたらそちらに紐付け）
+        // 新しい花を作成（同じ名前が今回すでに作られていたらそちらに紐付け）
         const name = fragment.flower_name ?? "名もなき強み";
         if (flowerCache[name]) {
           flower_id = flowerCache[name];
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
               .eq("id", flower_id);
           }
         } else {
-          const { data: newFlower } = await supabase
+          const { data: newFlower, error: insertError } = await supabase
             .from("flower_collection")
             .insert({
               user_id: user.id,
@@ -124,18 +124,23 @@ export async function POST(req: Request) {
             })
             .select("id")
             .single();
-          flower_id = newFlower!.id;
+          if (insertError || !newFlower) {
+            throw new Error(`花の作成に失敗しました: ${insertError?.message ?? "newFlower is null"}`);
+          }
+          flower_id = newFlower.id;
           flowerCache[name] = flower_id;
         }
       }
 
-      // root_elements に断片を保存
-      await supabase.from("root_elements").insert({
-        user_id: user.id,
-        flower_id,
-        log_id: log.id,
-        root: fragment.root,
-      });
+      // root_elements に断片を保存（各ログごとにそのログ固有の root 文を保存）
+      for (const { log, root } of rootEntries) {
+        await supabase.from("root_elements").insert({
+          user_id: user.id,
+          flower_id,
+          log_id: log.id,
+          root,
+        });
+      }
     }
 
     // ログを分析済みにマーク

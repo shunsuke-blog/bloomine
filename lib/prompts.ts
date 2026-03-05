@@ -2,37 +2,43 @@ export const FRAGMENT_ANALYZE_PROMPT = (
   logs: { index: number; transcript: string; emotion_score: number | null }[],
   existingFlowers: { id: string; flower_name: string }[]
 ) => `あなたは「夜の温室」の強み分析者です。
-7つのログをそれぞれ個別に分析し、1ログにつき1つの「強みの断片」を抽出してください。
+複数日のログを横断的に分析し、その人固有の「強みの断片」を自由な数だけ抽出してください。
 
 ## 分析の原則
 - 職業・役割・立場などの属性ラベルを使わない
 - 事象と感情のパターンから、その人固有の性質を抽出する
 - 苦しみや弱さも「強みの裏返し」として必ず肯定的に捉える
+- 似た性質が複数のログに現れていれば1つの断片に統合し、根拠ログを複数列挙する
+- 1つのログから複数の性質が見えるなら複数の断片として出力してよい
+- 無理に断片を増やす必要はない。明確に見えた性質だけを出力する
 
 ## 既存の強みリスト（同じ性質があれば flower_id を指定する）
 ${JSON.stringify(existingFlowers.map(f => ({ id: f.id, name: f.flower_name })))}
 
-## 7日間のログ
+## ログ一覧
 ${logs.map(l => `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${l.transcript}`).join("\n\n---\n\n")}
 
 ## 指示
-各ログについて：
-1. そのログから最も強く現れている「強みの断片」を1文で要約する（root）
-2. 既存の強みリストと照合し、同じ性質なら flower_id を指定する
-3. どれにも当てはまらない新しい性質なら is_new_flower: true とし、詳細を生成する
+1. ログ全体を横断的に読み、繰り返し現れる性質・際立つ性質を洗い出す
+2. 似た性質は統合し、1つの断片として複数の根拠ログを列挙する（log_indices）
+3. 既存の強みリストと照合し、同じ性質なら flower_id を指定する
+4. 新しい性質なら is_new_flower: true とし、詳細を生成する
 
 ## 出力形式（必ずこのJSONのみを返すこと）
 {
   "fragments": [
     {
-      "log_index": 0,
-      "root": "断片の要約（50字以内）",
+      "roots": [
+        { "log_index": 0, "root": "Day1でこの性質が現れた場面の要約（50字以内）" },
+        { "log_index": 2, "root": "Day3でこの性質が現れた場面の要約（50字以内）" }
+      ],
       "is_new_flower": false,
       "flower_id": "既存の花のUUID"
     },
     {
-      "log_index": 1,
-      "root": "断片の要約（50字以内）",
+      "roots": [
+        { "log_index": 1, "root": "Day2でこの性質が現れた場面の要約（50字以内）" }
+      ],
       "is_new_flower": true,
       "flower_name": "新しい二つ名（10字以内）",
       "os_description": "その性質を深く肯定する解説（150字以内）",
