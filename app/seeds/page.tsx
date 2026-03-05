@@ -3,103 +3,109 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Log = {
+type Root = {
   id: string;
-  transcript: string;
-  emotion_score: number | null;
-  created_at: string;
+  root: string;
+  log_id: string;
+  daily_logs: {
+    transcript: string;
+    emotion_score: number | null;
+    created_at: string;
+  } | null;
 };
 
-type Seed = {
+type Flower = {
   id: string;
-  week_number: number;
-  analyzed_at: string;
-  seed_name: string;
+  flower_name: string;
+  level: number;
   os_description: string | null;
   logic_reflection: string | null;
   environment_condition: string | null;
-  logs: Log[];
+  roots: Root[];
 };
 
-function EmotionDot({ score }: { score: number | null }) {
-  if (score === null) return <span className="w-2 h-2 rounded-full bg-slate-700 inline-block" />;
-  const hue = Math.round((score - 1) * 12); // 1→0° (赤寄り), 10→108° (緑)
-  return (
-    <span
-      className="w-2 h-2 rounded-full inline-block"
-      style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }}
-      title={`スコア: ${score}`}
-    />
-  );
-}
-
-function SeedCard({ seed }: { seed: Seed }) {
+function FlowerCard({ flower }: { flower: Flower }) {
   const [open, setOpen] = useState(false);
-  const date = new Date(seed.analyzed_at).toLocaleDateString("ja-JP", {
-    year: "numeric", month: "short", day: "numeric",
-  });
+  const [openRootId, setOpenRootId] = useState<string | null>(null);
 
   return (
     <div className="border border-slate-800 rounded-2xl overflow-hidden">
       {/* カードヘッダー */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full p-5 flex items-center justify-between hover:bg-slate-900/40 transition-colors text-left"
+        className="w-full p-5 text-left hover:bg-slate-900/40 transition-colors"
       >
-        <div className="space-y-1">
-          <p className="text-xs text-slate-600">Week {seed.week_number} · {date}</p>
-          <p className="text-lg font-light text-emerald-300 tracking-wide">{seed.seed_name}</p>
-          {/* 感情スコアの推移ドット */}
-          <div className="flex gap-1 pt-1">
-            {seed.logs.map((log) => (
-              <EmotionDot key={log.id} score={log.emotion_score} />
-            ))}
-            {seed.logs.length === 0 && (
-              <span className="text-xs text-slate-700">ログなし</span>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-lg font-light text-emerald-300 tracking-wide">{flower.flower_name}</p>
+            {flower.os_description && (
+              <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                {flower.os_description}
+              </p>
             )}
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0 ml-4">
+            <span className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+              Lv.{flower.level}
+            </span>
+            <span className="text-xs text-slate-700">{flower.roots.length}件の根</span>
           </div>
         </div>
-        <span className="text-slate-600 text-lg">{open ? "−" : "+"}</span>
       </button>
 
-      {/* 展開：詳細 + ログ逆引き */}
+      {/* 展開：詳細 + 根っこ一覧 */}
       {open && (
-        <div className="border-t border-slate-800/60 p-5 space-y-5 bg-slate-950/40">
-          {/* 分析結果 */}
-          <div className="space-y-3">
-            {seed.os_description && (
+        <div className="border-t border-slate-800/60 bg-slate-950/40">
+          {/* 詳細分析 */}
+          <div className="p-5 space-y-3">
+            {flower.os_description && (
               <div className="space-y-1">
                 <p className="text-xs text-emerald-700 tracking-wider">OS（性質）</p>
-                <p className="text-sm text-slate-300 leading-relaxed">{seed.os_description}</p>
+                <p className="text-sm text-slate-300 leading-relaxed">{flower.os_description}</p>
               </div>
             )}
-            {seed.logic_reflection && (
+            {flower.logic_reflection && (
               <div className="space-y-1">
                 <p className="text-xs text-slate-600 tracking-wider">過去の苦しみの再定義</p>
-                <p className="text-sm text-slate-400 leading-relaxed">{seed.logic_reflection}</p>
+                <p className="text-sm text-slate-400 leading-relaxed">{flower.logic_reflection}</p>
               </div>
             )}
-            {seed.environment_condition && (
+            {flower.environment_condition && (
               <div className="space-y-1">
                 <p className="text-xs text-slate-600 tracking-wider">輝ける土壌</p>
-                <p className="text-sm text-slate-400 leading-relaxed">{seed.environment_condition}</p>
+                <p className="text-sm text-slate-400 leading-relaxed">{flower.environment_condition}</p>
               </div>
             )}
           </div>
 
-          {/* 根拠ログ逆引き */}
-          {seed.logs.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-600 tracking-wider border-t border-slate-800/60 pt-4">
-                この週の言葉
-              </p>
-              {seed.logs.map((log, i) => (
-                <div key={log.id} className="flex gap-3 items-start">
-                  <div className="flex flex-col items-center gap-1 pt-1 shrink-0">
-                    <span className="text-xs text-slate-700">Day{i + 1}</span>
-                    <EmotionDot score={log.emotion_score} />
-                  </div>
-                  <p className="text-xs text-slate-500 leading-relaxed">{log.transcript}</p>
+          {/* 根っこ（根拠エピソード） */}
+          {flower.roots.length > 0 && (
+            <div className="border-t border-slate-800/40 p-5 space-y-2">
+              <p className="text-xs text-slate-600 tracking-wider mb-3">根っこ（証拠）</p>
+              {flower.roots.map((root) => (
+                <div key={root.id} className="space-y-1">
+                  <button
+                    onClick={() => setOpenRootId(openRootId === root.id ? null : root.id)}
+                    className="w-full text-left p-3 bg-slate-900/60 border border-slate-800 rounded-xl hover:border-emerald-900/60 transition-colors"
+                  >
+                    <p className="text-xs text-slate-400 leading-relaxed">{root.root}</p>
+                    <p className="text-xs text-slate-700 mt-1">
+                      {openRootId === root.id ? "▲ 閉じる" : "▼ 元のエピソードを見る"}
+                    </p>
+                  </button>
+
+                  {openRootId === root.id && root.daily_logs && (
+                    <div className="ml-3 p-3 bg-slate-900/30 border-l border-emerald-900/40 rounded-r-xl">
+                      {root.daily_logs.emotion_score !== null && (
+                        <p className="text-xs text-slate-600 mb-1">
+                          感情スコア: {root.daily_logs.emotion_score}/10
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        {root.daily_logs.transcript}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -110,16 +116,14 @@ function SeedCard({ seed }: { seed: Seed }) {
   );
 }
 
-export default function SeedsPage() {
-  const [seeds, setSeeds] = useState<Seed[]>([]);
+export default function FlowersPage() {
+  const [flowers, setFlowers] = useState<Flower[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/seeds")
+    fetch("/api/flowers")
       .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setSeeds(data);
-      })
+      .then((data) => { if (Array.isArray(data)) setFlowers(data); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -127,8 +131,8 @@ export default function SeedsPage() {
     <main className="min-h-screen bg-slate-950 text-slate-200 p-6 max-w-lg mx-auto space-y-6">
       <div className="flex items-center justify-between pt-4">
         <div>
-          <h1 className="text-xl font-light tracking-widest text-emerald-400">Seed Library</h1>
-          <p className="text-xs text-slate-600 mt-1">あなたが育ててきたタネたち</p>
+          <h1 className="text-xl font-light tracking-widest text-emerald-400">強みの庭</h1>
+          <p className="text-xs text-slate-600 mt-1">積み重ねられた、あなたの性質たち</p>
         </div>
         <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
           ← 温室へ戻る
@@ -137,15 +141,15 @@ export default function SeedsPage() {
 
       {loading ? (
         <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>
-      ) : seeds.length === 0 ? (
+      ) : flowers.length === 0 ? (
         <div className="text-center py-16 space-y-3">
-          <p className="text-slate-600 text-sm">まだタネがありません</p>
-          <p className="text-slate-700 text-xs">7日間ログを記録すると、タネが芽吹きます</p>
+          <p className="text-slate-600 text-sm">まだ花が咲いていません</p>
+          <p className="text-slate-700 text-xs">7日間ログを記録すると、強みの花が咲きます</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {seeds.map((seed) => (
-            <SeedCard key={seed.id} seed={seed} />
+          {flowers.map((flower) => (
+            <FlowerCard key={flower.id} flower={flower} />
           ))}
         </div>
       )}

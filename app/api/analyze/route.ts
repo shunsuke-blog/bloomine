@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { ANALYZE_SYSTEM_PROMPT } from "@/lib/prompts";
+import { FRAGMENT_ANALYZE_PROMPT } from "@/lib/prompts";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -18,22 +18,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "week_number が必要です" }, { status: 400 });
     }
 
-    // 一期一会チェック：すでに分析済みなら拒否
-    const { data: existing } = await supabase
-      .from("seeds_collection")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("week_number", week_number)
-      .single();
-
-    if (existing) {
-      return NextResponse.json({ error: "この週はすでに分析済みです" }, { status: 409 });
-    }
-
-    // 対象週の全ログを取得
+    // 対象週のログを取得
     const { data: logs, error: logsError } = await supabase
       .from("daily_logs")
-      .select("transcript, emotion_score, created_at")
+      .select("id, transcript, emotion_score, is_analyzed")
       .eq("user_id", user.id)
       .eq("week_number", week_number)
       .order("created_at", { ascending: true });
@@ -45,55 +33,129 @@ export async function POST(req: Request) {
       );
     }
 
-    // 7日分のログを Gemini に渡す文章を構築
-    const logsText = logs
-      .map((log, i) => {
-        const score = log.emotion_score ?? "未回答";
-        return `Day${i + 1}（感情スコア: ${score}）\n${log.transcript}`;
-      })
-      .join("\n\n---\n\n");
+    // 分析済みチェック
+    if (logs.every(l => l.is_analyzed)) {
+      return NextResponse.json({ error: "この週はすでに分析済みです" }, { status: 409 });
+    }
 
-    const prompt = `以下は、ある人の7日間の夜の独り言です。この人の「OS（性質）」を分析し、指定のJSON形式で返してください。\n\n${logsText}`;
+    // 既存の花を取得
+    const { data: existingFlowers } = await supabase
+      .from("flower_collection")
+      .select("id, flower_name")
+      .eq("user_id", user.id);
 
-    // Gemini で分析
+    const flowers = existingFlowers ?? [];
+
+    // Gemini に7つのログを一括分析させる
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      systemInstruction: ANALYZE_SYSTEM_PROMPT,
       generationConfig: { responseMimeType: "application/json" },
     });
 
+    const prompt = FRAGMENT_ANALYZE_PROMPT(
+      logs.map((l, i) => ({ index: i, transcript: l.transcript, emotion_score: l.emotion_score })),
+      flowers
+    );
+
     const result = await model.generateContent(prompt);
-    const json = JSON.parse(result.response.text());
+    const { fragments } = JSON.parse(result.response.text()) as {
+      fragments: {
+        log_index: number;
+        root: string;
+        is_new_flower: boolean;
+        flower_id?: string;
+        flower_name?: string;
+        os_description?: string;
+        logic_reflection?: string;
+        environment_condition?: string;
+      }[];
+    };
 
-    const { seed_name, os_description, logic_reflection, environment_condition } = json;
+    // 各断片を処理: 新しい花を作成 or 既存の花のレベルを上げる
+    const flowerCache: Record<string, string> = {}; // flower_name → id（同週で重複命名を防ぐ）
 
-    // seeds_collection に保存
-    const { data: seed, error: insertError } = await supabase
-      .from("seeds_collection")
-      .insert({
+    for (const fragment of fragments) {
+      const log = logs[fragment.log_index];
+      if (!log) continue;
+
+      let flower_id: string;
+
+      if (!fragment.is_new_flower && fragment.flower_id) {
+        // 既存の花に紐付け → level++
+        flower_id = fragment.flower_id;
+        // level を +1
+        const { data: current } = await supabase
+          .from("flower_collection")
+          .select("level")
+          .eq("id", flower_id)
+          .single();
+        if (current) {
+          await supabase
+            .from("flower_collection")
+            .update({ level: current.level + 1 })
+            .eq("id", flower_id);
+        }
+      } else {
+        // 新しい花を作成（同じ名前が今週すでに作られていたらそちらに紐付け）
+        const name = fragment.flower_name ?? "名もなき強み";
+        if (flowerCache[name]) {
+          flower_id = flowerCache[name];
+          const { data: current } = await supabase
+            .from("flower_collection")
+            .select("level")
+            .eq("id", flower_id)
+            .single();
+          if (current) {
+            await supabase
+              .from("flower_collection")
+              .update({ level: current.level + 1 })
+              .eq("id", flower_id);
+          }
+        } else {
+          const { data: newFlower } = await supabase
+            .from("flower_collection")
+            .insert({
+              user_id: user.id,
+              flower_name: name,
+              os_description: fragment.os_description ?? null,
+              logic_reflection: fragment.logic_reflection ?? null,
+              environment_condition: fragment.environment_condition ?? null,
+              level: 1,
+            })
+            .select("id")
+            .single();
+          flower_id = newFlower!.id;
+          flowerCache[name] = flower_id;
+        }
+      }
+
+      // root_elements に断片を保存
+      await supabase.from("root_elements").insert({
         user_id: user.id,
-        week_number,
-        seed_name,
-        os_description,
-        logic_reflection,
-        environment_condition,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("seeds_collection insert error:", insertError);
-      return NextResponse.json({ error: "保存に失敗しました" }, { status: 500 });
+        flower_id,
+        log_id: log.id,
+        root: fragment.root,
+      });
     }
 
-    // 使用済みフラグを更新
+    // ログを分析済みにマーク
     await supabase
       .from("daily_logs")
       .update({ is_analyzed: true })
       .eq("user_id", user.id)
       .eq("week_number", week_number);
 
-    return NextResponse.json(seed);
+    // 更新後の花一覧を返す
+    const { data: updatedFlowers } = await supabase
+      .from("flower_collection")
+      .select("id, flower_name, level")
+      .eq("user_id", user.id)
+      .order("level", { ascending: false });
+
+    return NextResponse.json({
+      flowers: updatedFlowers ?? [],
+      fragment_count: fragments.length,
+    });
   } catch (error: any) {
     console.error("Analyze Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

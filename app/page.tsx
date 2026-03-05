@@ -2,11 +2,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Seed = {
-  seed_name: string;
-  os_description: string;
-  logic_reflection: string;
-  environment_condition: string;
+type AnalyzeResult = {
+  flowers: { id: string; flower_name: string; level: number }[];
+  fragment_count: number;
 };
 
 type DayStatus = {
@@ -24,7 +22,7 @@ export default function NightGreenhouse() {
   const [recognition, setRecognition] = useState<any>(null);
   const [emotionScore, setEmotionScore] = useState<number | null>(null);
   const [dayStatus, setDayStatus] = useState<DayStatus | null>(null);
-  const [seed, setSeed] = useState<Seed | null>(null);
+  const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
@@ -52,7 +50,7 @@ export default function NightGreenhouse() {
     try {
       const res = await fetch("/api/status");
       if (res.ok) setDayStatus(await res.json());
-    } catch { }
+    } catch {}
   };
 
   const toggleRecording = () => {
@@ -95,8 +93,12 @@ export default function NightGreenhouse() {
         body: JSON.stringify({ week_number: dayStatus.weekNumber }),
       });
       const data = await res.json();
-      if (res.ok) setSeed(data);
-      else setAiResponse(data.error ?? "分析に失敗しました");
+      if (res.ok) {
+        setAnalyzeResult(data);
+        await fetchDayStatus();
+      } else {
+        setAiResponse(data.error ?? "分析に失敗しました");
+      }
     } catch {
       setAiResponse("分析中にエラーが発生しました");
     } finally {
@@ -106,33 +108,37 @@ export default function NightGreenhouse() {
 
   const canRecord = emotionScore !== null;
 
-  // Day7 分析結果の表示
-  if (seed) {
+  // 分析完了後の表示
+  if (analyzeResult) {
     return (
       <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6 space-y-6">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-        <p className="text-xs text-slate-500 tracking-widest">— 芽吹き —</p>
+        <p className="text-xs text-slate-500 tracking-widest">— 花が咲きました —</p>
 
         <div className="max-w-md w-full space-y-4">
-          <div className="text-center py-6">
-            <p className="text-xs text-slate-500 mb-2">あなたの強みのタネ</p>
-            <p className="text-3xl font-light text-emerald-300 tracking-wider">{seed.seed_name}</p>
+          <div className="text-center py-4">
+            <p className="text-slate-400 text-sm">
+              今週の言葉から <span className="text-emerald-300 text-lg">{analyzeResult.fragment_count}</span> 個の強みの断片が見つかりました
+            </p>
           </div>
 
-          <div className="p-5 bg-slate-900/40 rounded-2xl border border-emerald-900/30 space-y-1">
-            <p className="text-xs text-emerald-600 tracking-wider">OS（性質）</p>
-            <p className="text-sm text-slate-300 leading-relaxed">{seed.os_description}</p>
+          <div className="space-y-2">
+            {analyzeResult.flowers.map((flower) => (
+              <div key={flower.id} className="flex items-center justify-between p-4 bg-slate-900/40 border border-slate-800 rounded-xl">
+                <p className="text-sm text-emerald-300">{flower.flower_name}</p>
+                <span className="text-xs text-emerald-600 border border-emerald-900/50 px-2 py-0.5 rounded-full">
+                  Lv.{flower.level}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div className="p-5 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-1">
-            <p className="text-xs text-slate-500 tracking-wider">過去の苦しみの再定義</p>
-            <p className="text-sm text-slate-400 leading-relaxed">{seed.logic_reflection}</p>
-          </div>
-
-          <div className="p-5 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-1">
-            <p className="text-xs text-slate-500 tracking-wider">輝ける土壌</p>
-            <p className="text-sm text-slate-400 leading-relaxed">{seed.environment_condition}</p>
-          </div>
+          <Link
+            href="/seeds"
+            className="block w-full py-4 text-center bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all"
+          >
+            強みの庭を見る →
+          </Link>
         </div>
       </main>
     );
@@ -143,7 +149,7 @@ export default function NightGreenhouse() {
       <div className="w-full max-w-md flex items-center justify-between">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
         <Link href="/seeds" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          Seed Library →
+          強みの庭 →
         </Link>
       </div>
 
@@ -153,10 +159,11 @@ export default function NightGreenhouse() {
           {Array.from({ length: 7 }, (_, i) => (
             <div
               key={i}
-              className={`w-3 h-3 rounded-full transition-all ${i < dayStatus.logCount
+              className={`w-3 h-3 rounded-full transition-all ${
+                i < dayStatus.logCount
                   ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
                   : "bg-slate-800"
-                }`}
+              }`}
             />
           ))}
           <span className="text-xs text-slate-600 ml-1">{dayStatus.logCount}/7日</span>
@@ -171,10 +178,10 @@ export default function NightGreenhouse() {
             disabled={isAnalyzing}
             className="w-full py-4 bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all disabled:opacity-50"
           >
-            {isAnalyzing ? "タネが芽吹いています..." : "✦ 7日間のタネを見る"}
+            {isAnalyzing ? "強みの花が咲いています..." : "✦ 今週の強みの花を咲かせる"}
           </button>
           <p className="text-center text-xs text-slate-600 mt-2">
-            一期一会。分析は一度だけです。
+            7つのログから強みの断片を抽出します
           </p>
         </div>
       )}
@@ -201,10 +208,11 @@ export default function NightGreenhouse() {
             <button
               key={n}
               onClick={() => setEmotionScore(n)}
-              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${emotionScore === n
+              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${
+                emotionScore === n
                   ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(52,211,153,0.4)]"
                   : "bg-slate-900/60 text-slate-500 border border-slate-800 hover:border-emerald-900"
-                }`}
+              }`}
             >
               {n}
             </button>
@@ -217,12 +225,13 @@ export default function NightGreenhouse() {
         <button
           onClick={toggleRecording}
           disabled={!canRecord && !isRecording}
-          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
+          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+            isRecording
               ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"
               : canRecord
-                ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
-                : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
-            }`}
+              ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
+              : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
+          }`}
         >
           <span className="text-xs">{isRecording ? "STOP" : "TALK"}</span>
         </button>

@@ -1,3 +1,47 @@
+export const FRAGMENT_ANALYZE_PROMPT = (
+  logs: { index: number; transcript: string; emotion_score: number | null }[],
+  existingFlowers: { id: string; flower_name: string }[]
+) => `あなたは「夜の温室」の強み分析者です。
+7つのログをそれぞれ個別に分析し、1ログにつき1つの「強みの断片」を抽出してください。
+
+## 分析の原則
+- 職業・役割・立場などの属性ラベルを使わない
+- 事象と感情のパターンから、その人固有の性質を抽出する
+- 苦しみや弱さも「強みの裏返し」として必ず肯定的に捉える
+
+## 既存の強みリスト（同じ性質があれば flower_id を指定する）
+${JSON.stringify(existingFlowers.map(f => ({ id: f.id, name: f.flower_name })))}
+
+## 7日間のログ
+${logs.map(l => `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${l.transcript}`).join("\n\n---\n\n")}
+
+## 指示
+各ログについて：
+1. そのログから最も強く現れている「強みの断片」を1文で要約する（root）
+2. 既存の強みリストと照合し、同じ性質なら flower_id を指定する
+3. どれにも当てはまらない新しい性質なら is_new_flower: true とし、詳細を生成する
+
+## 出力形式（必ずこのJSONのみを返すこと）
+{
+  "fragments": [
+    {
+      "log_index": 0,
+      "root": "断片の要約（50字以内）",
+      "is_new_flower": false,
+      "flower_id": "既存の花のUUID"
+    },
+    {
+      "log_index": 1,
+      "root": "断片の要約（50字以内）",
+      "is_new_flower": true,
+      "flower_name": "新しい二つ名（10字以内）",
+      "os_description": "その性質を深く肯定する解説（150字以内）",
+      "logic_reflection": "過去の苦しみを強みの裏返しとして再定義する文（150字以内）",
+      "environment_condition": "その性質が最も輝く環境・条件（100字以内）"
+    }
+  ]
+}`;
+
 export const ANALYZE_SYSTEM_PROMPT = `あなたは「夜の温室」の深層分析者です。
 7日間のユーザーの言葉から、その人固有の「OS（性質）」を発見し、命名してください。
 
