@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { PlantAnimation, getPlantStage } from "@/components/PlantAnimation";
 import { getQuestion, getResponse } from "@/lib/messages";
 import { useMotionValue, useSpring } from "framer-motion";
+import Onboarding, { ONBOARDING_STORAGE_KEY } from "@/components/Onboarding";
 
 type AnalyzeResult = {
   flowers: { id: string; flower_name: string; level: number }[];
@@ -38,6 +39,7 @@ export default function NightGreenhouse() {
   // loadProfile と fetchDayStatus の両方が完了したら true → メッセージ表示確定
   const [initialized, setInitialized] = useState(false);
   const initDoneRef = useRef(0); // 完了した初期化の数（2になったら描画開始）
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const router = useRouter();
 
   // ─── 音量（土グロー用） ───
@@ -53,6 +55,13 @@ export default function NightGreenhouse() {
   useEffect(() => {
     return () => { stopVolumeTracking(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 初回訪問時にオンボーディングを表示
+  useEffect(() => {
+    if (!localStorage.getItem(ONBOARDING_STORAGE_KEY)) {
+      setShowOnboarding(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -284,6 +293,7 @@ export default function NightGreenhouse() {
         <div className="absolute right-0 flex items-center gap-2">
           <Link
             href="/calendar"
+            data-onboarding="calendar-button"
             className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
             aria-label="記録の庭"
           >
@@ -296,6 +306,7 @@ export default function NightGreenhouse() {
           </Link>
           <Link
             href="/seeds"
+            data-onboarding="seeds-button"
             className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
             aria-label="強みの庭"
           >
@@ -311,7 +322,7 @@ export default function NightGreenhouse() {
       </div>
 
       {/* ログカウント（進捗ランプ）— 常にレンダリングしてレイアウトシフトを防ぐ */}
-      <div className="flex gap-2 items-center">
+      <div data-onboarding="progress-lamps" className="flex gap-2 items-center">
         {Array.from({ length: 7 }, (_, i) => (
           <div
             key={i}
@@ -338,7 +349,9 @@ export default function NightGreenhouse() {
       </div>
 
       {/* 植物（録音中は音量に合わせて土がグロー） */}
-      <PlantAnimation stage={plantStage} volume={smoothVolume} />
+      <div data-onboarding="plant-animation">
+        <PlantAnimation stage={plantStage} volume={smoothVolume} />
+      </div>
 
       {/* Day7 分析ボタン */}
       {cycleLogCount >= 7 && !dayStatus?.alreadyAnalyzed && (
@@ -357,7 +370,7 @@ export default function NightGreenhouse() {
       )}
 
       {/* 感情スコア選択 */}
-      <div className="max-w-md w-full space-y-2">
+      <div data-onboarding="emotion-score" className="max-w-md w-full space-y-2">
         <p className="text-xs text-slate-500 text-center">
           今の気持ちを数字で教えてください
           <span className="ml-2 text-slate-600">（1: 不快　10:快）</span>
@@ -381,6 +394,7 @@ export default function NightGreenhouse() {
       {/* TALK ボタン */}
       <div className="flex flex-col items-center gap-2">
         <button
+          data-onboarding="talk-button"
           onClick={toggleRecording}
           disabled={!canRecord && !isRecording}
           className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
@@ -401,6 +415,15 @@ export default function NightGreenhouse() {
         </p>
       )}
 
+      {/* オンボーディング */}
+      {showOnboarding && (
+        <Onboarding
+          onComplete={() => {
+            localStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+            setShowOnboarding(false);
+          }}
+        />
+      )}
 
     </main>
   );
