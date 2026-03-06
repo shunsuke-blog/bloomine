@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { PlantAnimation, getPlantStage } from "@/components/PlantAnimation";
+import { useMotionValue, useSpring } from "framer-motion";
 
 type AnalyzeResult = {
   flowers: { id: string; flower_name: string; level: number }[];
@@ -31,6 +32,21 @@ export default function NightGreenhouse() {
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const router = useRouter();
+
+  // ─── 音量（土グロー用） ───
+  const rawVolume = useMotionValue(0);
+  const smoothVolume = useSpring(rawVolume, { damping: 18, stiffness: 200 });
+
+  const audioCtxRef  = useRef<AudioContext | null>(null);
+  const analyserRef  = useRef<AnalyserNode | null>(null);
+  const streamRef    = useRef<MediaStream | null>(null);
+  const rafRef       = useRef<number | null>(null);
+
+  // アンマウント時に音声リソースを解放
+  useEffect(() => {
+    return () => { stopVolumeTracking(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchDayStatus();
@@ -68,14 +84,48 @@ export default function NightGreenhouse() {
     } catch { }
   };
 
+  const startVolumeTracking = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((sum, v) => sum + v, 0) / (data.length * 255);
+        rawVolume.set(avg);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    } catch { /* マイクアクセス拒否 → 無音で継続 */ }
+  };
+
+  const stopVolumeTracking = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+    streamRef.current = null;
+    rawVolume.set(0);
+  };
+
   const toggleRecording = () => {
     if (isRecording) {
       recognition?.stop();
+      stopVolumeTracking();
       if (transcript.trim()) sendToLogs(transcript);
     } else {
       setTranscript("");
       setAiResponse("");
       recognition?.start();
+      startVolumeTracking();
     }
     setIsRecording(!isRecording);
   };
@@ -213,8 +263,8 @@ export default function NightGreenhouse() {
         )}
       </div>
 
-      {/* 植物 */}
-      <PlantAnimation stage={plantStage} />
+      {/* 植物（録音中は音量に合わせて土がグロー） */}
+      <PlantAnimation stage={plantStage} volume={smoothVolume} />
 
       {/* Day7 分析ボタン */}
       {cycleLogCount >= 7 && !dayStatus?.alreadyAnalyzed && (

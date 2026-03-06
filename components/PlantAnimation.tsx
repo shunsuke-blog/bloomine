@@ -1,5 +1,5 @@
 "use client";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type MotionValue, useTransform } from "framer-motion";
 
 export type PlantStage = "soil" | "sprout" | "seedling" | "grown" | "bud" | "flower";
 
@@ -25,6 +25,14 @@ const C = {
   center:     "#059669", // emerald-600
 } as const;
 
+// ─── 花専用カラー（優しい赤/ローズ系） ───
+const FC = {
+  petal:     "#fda4af", // rose-300
+  petalFill: "#4c0519", // rose-950
+  center:    "#fb7185", // rose-400
+  glow:      "#fda4af", // rose-300
+} as const;
+
 // ─── 共通 props ───
 const stemP = {
   stroke: C.stem, strokeWidth: 1.5, fill: "none",
@@ -33,11 +41,30 @@ const stemP = {
 const leafP  = { stroke: C.leaf, strokeWidth: 1.5, fill: C.leafFill };
 const leafPs = { stroke: C.leaf, strokeWidth: 1.2, fill: C.leafFill };
 
-// ─── 土台（全ステージ共通） ───
+// ─── 土台（音量なし・静的） ───
 function Soil() {
   return (
     <ellipse cx="60" cy="145" rx="40" ry="11"
       fill={C.soilFill} stroke={C.soilStroke} strokeWidth="1.5" />
+  );
+}
+
+// ─── 土台（音量グロー付き） ───
+// 感度調整: [0, 0.06] → 小さな音でも大きく光る
+function SoilGlow({ volume }: { volume: MotionValue<number> }) {
+  const opacity = useTransform(volume, [0, 0.5], [0, 0.88]);
+  return (
+    <>
+      {/* グロー層（土の後ろに描画） */}
+      <motion.ellipse
+        cx="60" cy="148" rx="60" ry="20"
+        fill="#6ee7b7"
+        style={{ opacity, filter: "blur(15px)" }}
+      />
+      {/* 土（グロー層の上に重ねてクリーンに見せる） */}
+      <ellipse cx="60" cy="145" rx="40" ry="11"
+        fill={C.soilFill} stroke={C.soilStroke} strokeWidth="1.5" />
+    </>
   );
 }
 
@@ -117,16 +144,16 @@ function Flower() {
       <path d="M60,136 Q65,108 63,68" {...stemP} />
       <LeavesLow />
       <LeavesHigh />
-      {/* 花びら 6枚（中心 63,56 を軸に回転） */}
+      {/* 花びら 6枚（中心 63,56 を軸に回転） — ローズ系カラー */}
       {PETAL_ANGLES.map((deg) => (
         <ellipse key={deg}
           cx="63" cy="44" rx="5" ry="10"
-          fill={C.petalFill} stroke={C.petal} strokeWidth="1.2"
+          fill={FC.petalFill} stroke={FC.petal} strokeWidth="1.2"
           transform={`rotate(${deg}, 63, 56)`}
         />
       ))}
       {/* 花の中心 */}
-      <circle cx="63" cy="56" r="6" fill={C.center} stroke={C.bud} strokeWidth="1" />
+      <circle cx="63" cy="56" r="6" fill={FC.center} stroke={FC.glow} strokeWidth="1" />
     </>
   );
 }
@@ -148,13 +175,19 @@ const variants = {
   exit:    { opacity: 0, y: -4, scale: 0.97 },
 };
 
-export function PlantAnimation({ stage }: { stage: PlantStage }) {
+export function PlantAnimation({
+  stage,
+  volume,
+}: {
+  stage: PlantStage;
+  volume?: MotionValue<number>;
+}) {
   return (
     <svg viewBox="0 0 120 160" width="120" height="160"
       xmlns="http://www.w3.org/2000/svg"
       style={{ overflow: "visible" }}
     >
-      <Soil />
+      {volume ? <SoilGlow volume={volume} /> : <Soil />}
       <AnimatePresence mode="wait">
         <motion.g
           key={stage}
