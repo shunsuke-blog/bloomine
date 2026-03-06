@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { FRAGMENT_ANALYZE_PROMPT } from "@/lib/prompts";
+import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT } from "@/lib/prompts";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -38,27 +38,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "この週はすでに分析済みです" }, { status: 409 });
     }
 
-    // 既存の花を取得
-    const { data: existingFlowers } = await supabase
-      .from("flower_collection")
-      .select("id, flower_name")
-      .eq("user_id", user.id);
+    const logInputs = logs.map((l, i) => ({
+      index: i,
+      transcript: l.transcript,
+      emotion_score: l.emotion_score,
+    }));
 
-    const flowers = existingFlowers ?? [];
+    // 既存の花・価値観を取得（並列）
+    const [{ data: existingFlowers }, { data: existingTreasures }] = await Promise.all([
+      supabase.from("flower_collection").select("id, flower_name").eq("user_id", user.id),
+      supabase.from("treasure_collection").select("id, treasure_name").eq("user_id", user.id),
+    ]);
 
-    // Gemini に7つのログを一括分析させる
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json" },
     });
 
-    const prompt = FRAGMENT_ANALYZE_PROMPT(
-      logs.map((l, i) => ({ index: i, transcript: l.transcript, emotion_score: l.emotion_score })),
-      flowers
-    );
+    // 強み分析・価値観分析を並列実行
+    const [flowerResult, treasureResult] = await Promise.all([
+      model.generateContent(FRAGMENT_ANALYZE_PROMPT(logInputs, existingFlowers ?? [])),
+      model.generateContent(VALUE_ANALYZE_PROMPT(logInputs, existingTreasures ?? [])),
+    ]);
 
-    const result = await model.generateContent(prompt);
-    const { fragments } = JSON.parse(result.response.text()) as {
+    // ── 強みの処理 ────────────────────────────────────────────────────────────
+    const { fragments: flowerFragments } = JSON.parse(flowerResult.response.text()) as {
       fragments: {
         roots: { log_index: number; root: string }[];
         is_new_flower: boolean;
@@ -70,10 +74,9 @@ export async function POST(req: Request) {
       }[];
     };
 
-    // 各断片を処理: 新しい花を作成 or 既存の花のレベルを上げる
-    const flowerCache: Record<string, string> = {}; // flower_name → id（同回で重複命名を防ぐ）
+    const flowerCache: Record<string, string> = {};
 
-    for (const fragment of fragments) {
+    for (const fragment of flowerFragments) {
       const rootEntries = (fragment.roots ?? [])
         .map(r => ({ log: logs[r.log_index], root: r.root }))
         .filter(r => r.log != null);
@@ -82,7 +85,6 @@ export async function POST(req: Request) {
       let flower_id: string;
 
       if (!fragment.is_new_flower && fragment.flower_id) {
-        // 既存の花に紐付け → level++
         flower_id = fragment.flower_id;
         const { data: current } = await supabase
           .from("flower_collection")
@@ -96,7 +98,6 @@ export async function POST(req: Request) {
             .eq("id", flower_id);
         }
       } else {
-        // 新しい花を作成（同じ名前が今回すでに作られていたらそちらに紐付け）
         const name = fragment.flower_name ?? "名もなき強み";
         if (flowerCache[name]) {
           flower_id = flowerCache[name];
@@ -132,13 +133,92 @@ export async function POST(req: Request) {
         }
       }
 
-      // root_elements に断片を保存（各ログごとにそのログ固有の root 文を保存）
       for (const { log, root } of rootEntries) {
         await supabase.from("root_elements").insert({
           user_id: user.id,
           flower_id,
           log_id: log.id,
           root,
+        });
+      }
+    }
+
+    // ── 価値観の処理 ──────────────────────────────────────────────────────────
+    const { fragments: treasureFragments } = JSON.parse(treasureResult.response.text()) as {
+      fragments: {
+        sites: { log_index: number; site: string }[];
+        is_new_treasure: boolean;
+        treasure_id?: string;
+        treasure_name?: string;
+        description?: string;
+        keywords?: string[];
+      }[];
+    };
+
+    const treasureCache: Record<string, string> = {};
+
+    for (const fragment of treasureFragments) {
+      const siteEntries = (fragment.sites ?? [])
+        .map(s => ({ log: logs[s.log_index], site: s.site }))
+        .filter(s => s.log != null);
+      if (siteEntries.length === 0) continue;
+
+      let treasure_id: string;
+
+      if (!fragment.is_new_treasure && fragment.treasure_id) {
+        treasure_id = fragment.treasure_id;
+        const { data: current } = await supabase
+          .from("treasure_collection")
+          .select("level")
+          .eq("id", treasure_id)
+          .single();
+        if (current) {
+          await supabase
+            .from("treasure_collection")
+            .update({ level: current.level + 1 })
+            .eq("id", treasure_id);
+        }
+      } else {
+        const name = fragment.treasure_name ?? "名もなき価値観";
+        if (treasureCache[name]) {
+          treasure_id = treasureCache[name];
+          const { data: current } = await supabase
+            .from("treasure_collection")
+            .select("level")
+            .eq("id", treasure_id)
+            .single();
+          if (current) {
+            await supabase
+              .from("treasure_collection")
+              .update({ level: current.level + 1 })
+              .eq("id", treasure_id);
+          }
+        } else {
+          const { data: newTreasure, error: insertError } = await supabase
+            .from("treasure_collection")
+            .insert({
+              user_id: user.id,
+              treasure_name: name,
+              description: fragment.description ?? null,
+              keywords: fragment.keywords ?? [],
+              level: 1,
+            })
+            .select("id")
+            .single();
+          if (insertError || !newTreasure) {
+            throw new Error(`価値観の作成に失敗しました: ${insertError?.message ?? "newTreasure is null"}`);
+          }
+          treasure_id = newTreasure.id;
+          treasureCache[name] = treasure_id;
+        }
+      }
+
+      for (const { log, site } of siteEntries) {
+        await supabase.from("dig_sites").insert({
+          user_id: user.id,
+          treasure_id,
+          log_id: log.id,
+          site,
         });
       }
     }
@@ -150,16 +230,25 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .eq("week_number", week_number);
 
-    // 更新後の花一覧を返す
-    const { data: updatedFlowers } = await supabase
-      .from("flower_collection")
-      .select("id, flower_name, level")
-      .eq("user_id", user.id)
-      .order("level", { ascending: false });
+    // 更新後の花・価値観一覧を返す（並列）
+    const [{ data: updatedFlowers }, { data: updatedTreasures }] = await Promise.all([
+      supabase
+        .from("flower_collection")
+        .select("id, flower_name, level")
+        .eq("user_id", user.id)
+        .order("level", { ascending: false }),
+      supabase
+        .from("treasure_collection")
+        .select("id, treasure_name, level")
+        .eq("user_id", user.id)
+        .order("level", { ascending: false }),
+    ]);
 
     return NextResponse.json({
       flowers: updatedFlowers ?? [],
-      fragment_count: fragments.length,
+      fragment_count: flowerFragments.length,
+      treasures: updatedTreasures ?? [],
+      treasure_count: treasureFragments.length,
     });
   } catch (error: any) {
     console.error("Analyze Error:", error);

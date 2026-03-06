@@ -32,6 +32,13 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
       "「はなす」を押すと音声の記録が始まります。話し終えたら「やめる」を押すと自動的に保存されます。",
   },
   {
+    id: "treasures-button",
+    target: "treasures-button",
+    title: "価値観の倉庫を見る",
+    description:
+      "7回の記録から見つかった「あなたが大切にしている価値観」が宝物として蓄積されます。このボタンから価値観の倉庫へ移動できます。",
+  },
+  {
     id: "seeds-button",
     target: "seeds-button",
     title: "咲いた花（強み）を見る",

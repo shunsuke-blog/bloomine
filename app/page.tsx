@@ -11,6 +11,8 @@ import Onboarding, { ONBOARDING_STORAGE_KEY } from "@/components/Onboarding";
 type AnalyzeResult = {
   flowers: { id: string; flower_name: string; level: number }[];
   fragment_count: number;
+  treasures: { id: string; treasure_name: string; level: number }[];
+  treasure_count: number;
 };
 
 type DayStatus = {
@@ -244,14 +246,12 @@ export default function NightGreenhouse() {
 
         <p className="text-xs text-slate-500 tracking-widest">— 花が咲きました —</p>
 
-        <div className="max-w-md w-full space-y-4">
-          <div className="text-center">
-            <p className="text-slate-400 text-sm">
-              今週の言葉から <span className="text-emerald-300 text-lg">{analyzeResult.fragment_count}</span> 個の強みの断片が見つかりました
-            </p>
-          </div>
-
+        <div className="max-w-md w-full space-y-5">
+          {/* 強みの断片 */}
           <div className="space-y-2">
+            <p className="text-xs text-slate-600 tracking-wider text-center">
+              今週の言葉から <span className="text-emerald-300">{analyzeResult.fragment_count}</span> 個の強みが見つかりました
+            </p>
             {analyzeResult.flowers.map((flower) => (
               <div key={flower.id} className="flex items-center justify-between p-4 bg-slate-900/40 border border-slate-800 rounded-xl">
                 <p className="text-sm text-emerald-300">{flower.flower_name}</p>
@@ -260,14 +260,36 @@ export default function NightGreenhouse() {
                 </span>
               </div>
             ))}
+            <Link
+              href="/seeds"
+              className="block w-full py-3 text-center bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all"
+            >
+              強みの庭を見る →
+            </Link>
           </div>
 
-          <Link
-            href="/seeds"
-            className="block w-full py-4 text-center bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all"
-          >
-            強みの庭を見る →
-          </Link>
+          {/* 価値観の宝物 */}
+          {analyzeResult.treasures.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600 tracking-wider text-center">
+                今週の言葉から <span className="text-amber-300">{analyzeResult.treasure_count}</span> 個の価値観が見つかりました
+              </p>
+              {analyzeResult.treasures.map((treasure) => (
+                <div key={treasure.id} className="flex items-center justify-between p-4 bg-slate-900/40 border border-slate-800 rounded-xl">
+                  <p className="text-sm text-amber-300">{treasure.treasure_name}</p>
+                  <span className="text-xs text-amber-600 border border-amber-900/50 px-2 py-0.5 rounded-full">
+                    Lv.{treasure.level}
+                  </span>
+                </div>
+              ))}
+              <Link
+                href="/treasures"
+                className="block w-full py-3 text-center bg-amber-900/30 border border-amber-700/50 rounded-2xl text-amber-300 text-sm tracking-wide hover:bg-amber-900/50 transition-all"
+              >
+                価値観の倉庫を見る →
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     );
@@ -302,6 +324,16 @@ export default function NightGreenhouse() {
               <line x1="3" y1="9" x2="21" y2="9" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="16" y1="2" x2="16" y2="6" />
+            </svg>
+          </Link>
+          <Link
+            href="/treasures"
+            data-onboarding="treasures-button"
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+            aria-label="価値観の倉庫"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2l2.4 4.8L20 7.6l-4 3.9 1 5.5L12 14.5l-5 2.5 1-5.5-4-3.9 5.6-.8z" />
             </svg>
           </Link>
           <Link

@@ -60,7 +60,7 @@ function FlowerCard({ flower }: { flower: Flower }) {
           <div className="p-5 space-y-3">
             {flower.os_description && (
               <div className="space-y-1">
-                <p className="text-xs text-emerald-700 tracking-wider">OS（性質）</p>
+                <p className="text-xs text-emerald-700 tracking-wider">花の解説</p>
                 <p className="text-sm text-slate-300 leading-relaxed">{flower.os_description}</p>
               </div>
             )}
