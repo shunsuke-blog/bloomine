@@ -101,11 +101,8 @@ export default function CalendarPage() {
 
       {/* ヘッダー */}
       <div className="w-full max-w-md flex items-center justify-between">
-        <Link
-          href="/"
-          className="text-slate-500 hover:text-slate-300 transition-colors text-sm"
-        >
-          ← 戻る
+        <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+          ← 温室へ戻る
         </Link>
         <h1 className="text-lg font-light tracking-widest text-emerald-400">記録の庭</h1>
         <div className="w-14" />

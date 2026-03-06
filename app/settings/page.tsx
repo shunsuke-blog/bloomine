@@ -151,12 +151,11 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center px-4 pt-8 pb-10 sm:px-6 sm:pt-10 space-y-6">
-      <div className="w-full max-w-md flex items-center justify-between">
-        <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+      <div className="w-full max-w-md relative flex items-center justify-center">
+        <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
           ← 温室へ戻る
         </Link>
         <h1 className="text-sm font-light tracking-widest text-slate-400">設定</h1>
-        <div className="w-16" />
       </div>
 
       <div className="w-full max-w-md space-y-4">

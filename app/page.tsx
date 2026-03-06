@@ -35,6 +35,9 @@ export default function NightGreenhouse() {
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  // loadProfile と fetchDayStatus の両方が完了したら true → メッセージ表示確定
+  const [initialized, setInitialized] = useState(false);
+  const initDoneRef = useRef(0); // 完了した初期化の数（2になったら描画開始）
   const router = useRouter();
 
   // ─── 音量（土グロー用） ───
@@ -56,7 +59,11 @@ export default function NightGreenhouse() {
     // プロフィール取得 + タイムゾーン自動保存
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // 未認証時もカウントを進めて fetchDayStatus 完了だけで描画を解放できるようにする
+        if (++initDoneRef.current >= 2) setInitialized(true);
+        return;
+      }
 
       const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -74,6 +81,9 @@ export default function NightGreenhouse() {
           .from("user_profiles")
           .upsert({ id: user.id, timezone: browserTz });
       }
+
+      // 初期化カウントを進め、両方完了したら描画を解放
+      if (++initDoneRef.current >= 2) setInitialized(true);
     };
     loadProfile();
   }, []);
@@ -109,6 +119,8 @@ export default function NightGreenhouse() {
         if (!cycleInitialized.current) {
           setCycleLogCount(data.alreadyAnalyzed ? 0 : (data.unanalyzedCount ?? 0));
           cycleInitialized.current = true;
+          // 初期化カウントを進め、両方完了したら描画を解放
+          if (++initDoneRef.current >= 2) setInitialized(true);
         }
       }
     } catch { }
@@ -255,52 +267,67 @@ export default function NightGreenhouse() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
 
-      {/* タイトル + 左:カレンダー / 右:設定 */}
+      {/* タイトル + 左:設定 / 右:カレンダー・強みの庭 */}
       <div className="w-full max-w-md relative flex items-center justify-center">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-        {/* カレンダーボタン（左） */}
-        <Link
-          href="/calendar"
-          className="absolute left-0 w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="記録の庭"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-          </svg>
-        </Link>
-        {/* 設定ボタン（右） */}
+
+        {/* 設定ボタン（左） */}
         <Link
           href="/settings"
-          className="absolute right-0 w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all text-3xl leading-none"
+          className="absolute left-0 w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all text-3xl leading-none"
           aria-label="設定"
         >
           ⚙
         </Link>
+
+        {/* カレンダー・強みの庭ボタン（右） */}
+        <div className="absolute right-0 flex items-center gap-2">
+          <Link
+            href="/calendar"
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+            aria-label="記録の庭"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+            </svg>
+          </Link>
+          <Link
+            href="/seeds"
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+            aria-label="強みの庭"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="2" />
+              <ellipse cx="12" cy="5.5" rx="1.8" ry="3" />
+              <ellipse cx="12" cy="18.5" rx="1.8" ry="3" />
+              <ellipse cx="5.5" cy="12" rx="3" ry="1.8" />
+              <ellipse cx="18.5" cy="12" rx="3" ry="1.8" />
+            </svg>
+          </Link>
+        </div>
       </div>
 
-      {/* ログカウント（進捗ランプ） */}
-      {dayStatus && (
-        <div className="flex gap-2 items-center">
-          {Array.from({ length: 7 }, (_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full transition-all ${i < cycleLogCount
-                ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
-                : "bg-slate-800"
-                }`}
-            />
-          ))}
-          <span className="text-xs text-slate-600 ml-1">{cycleLogCount}/7日</span>
-        </div>
-      )}
+      {/* ログカウント（進捗ランプ）— 常にレンダリングしてレイアウトシフトを防ぐ */}
+      <div className="flex gap-2 items-center">
+        {Array.from({ length: 7 }, (_, i) => (
+          <div
+            key={i}
+            className={`w-3 h-3 rounded-full transition-all ${i < cycleLogCount
+              ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
+              : "bg-slate-800"
+              }`}
+          />
+        ))}
+        <span className="text-xs text-slate-600 ml-1">{cycleLogCount}/7日</span>
+      </div>
 
-      {/* 案内人のメッセージ */}
+      {/* 案内人のメッセージ — initialized まではプレースホルダーでレイアウトを固定 */}
       <div className="max-w-md w-full min-h-[72px] p-4 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
-        {isLoading ? (
-          <p className="text-emerald-500/50 animate-pulse text-sm">言葉を受け取っています...</p>
+        {!initialized || isLoading ? (
+          <p className="text-slate-800 animate-pulse text-sm select-none">…</p>
         ) : errorMsg ? (
           <p className="text-slate-500 leading-relaxed italic text-sm">{errorMsg}</p>
         ) : responseIndex !== null ? (
@@ -333,7 +360,7 @@ export default function NightGreenhouse() {
       <div className="max-w-md w-full space-y-2">
         <p className="text-xs text-slate-500 text-center">
           今の気持ちを数字で教えてください
-          <span className="ml-2 text-slate-600">（1: 辛い　10: 良い）</span>
+          <span className="ml-2 text-slate-600">（1: 不快　10:快）</span>
         </p>
         <div className="flex justify-between gap-1">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
@@ -363,11 +390,9 @@ export default function NightGreenhouse() {
               : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
             }`}
         >
-          <span className="text-xs">{isRecording ? "STOP" : "TALK"}</span>
+          <span className="text-xs">{isRecording ? "やめる" : "はなす"}</span>
         </button>
-        {!canRecord && !isRecording && (
-          <p className="text-xs text-slate-600">スコアを選んでから話せます</p>
-        )}
+        <p className={`text-xs text-slate-600 ${!canRecord && !isRecording ? "" : "invisible"}`}>スコアを選んでから話せます</p>
       </div>
 
       {transcript && (
@@ -376,18 +401,6 @@ export default function NightGreenhouse() {
         </p>
       )}
 
-      {/* 強みの庭 ボタン（設定ボタンと同じコンテナ幅・余白で右端を揃える） */}
-      <div className="fixed bottom-8 inset-x-0 flex justify-center px-4 sm:px-6 pointer-events-none">
-        <div className="w-full max-w-md relative h-0">
-          <Link
-            href="/seeds"
-            className="absolute right-0 pointer-events-auto flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
-          >
-            強みの庭
-            <span className="text-emerald-600">→</span>
-          </Link>
-        </div>
-      </div>
 
     </main>
   );

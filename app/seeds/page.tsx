@@ -129,14 +129,14 @@ export default function FlowersPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
-      <div className="flex items-center justify-between pt-4">
-        <div>
+      <div className="relative flex items-center justify-center pt-4">
+        <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
+          ← 温室へ戻る
+        </Link>
+        <div className="text-center">
           <h1 className="text-xl font-light tracking-widest text-emerald-400">強みの庭</h1>
           <p className="text-xs text-slate-600 mt-1">積み重ねられた、あなたの性質たち</p>
         </div>
-        <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          ← 温室へ戻る
-        </Link>
       </div>
 
       {loading ? (
