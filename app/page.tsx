@@ -178,7 +178,11 @@ export default function NightGreenhouse() {
     if (isRecording) {
       recognition?.stop();
       stopVolumeTracking();
-      if (transcript.trim()) sendToLogs(transcript);
+      if (transcript.trim()) {
+        sendToLogs(transcript);
+      } else if (isRedo) {
+        setIsRedo(false); // 録音なしでやり直しキャンセル → やり直すボタンに戻す
+      }
     } else {
       setTranscript("");
       setResponseIndex(null);

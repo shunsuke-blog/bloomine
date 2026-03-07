@@ -55,11 +55,18 @@ function SoilGlow({ volume }: { volume: MotionValue<number> }) {
   const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
   return (
     <>
+      {/* SVG ネイティブフィルター（iOS Safari 対応） */}
+      <defs>
+        <filter id="soil-blur" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="10" />
+        </filter>
+      </defs>
       {/* グロー層（土の後ろに描画） */}
       <motion.ellipse
         cx="60" cy="148" rx="72" ry="24"
         fill="#6ee7b7"
-        style={{ opacity, filter: "blur(30px)" }}
+        filter="url(#soil-blur)"
+        style={{ opacity }}
       />
       {/* 土（グロー層の上に重ねてクリーンに見せる） */}
       <ellipse cx="60" cy="145" rx="40" ry="11"
