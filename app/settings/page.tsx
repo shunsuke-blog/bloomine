@@ -27,6 +27,8 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // お問い合わせ
   const [showContact, setShowContact] = useState(false);
@@ -43,7 +45,9 @@ export default function SettingsPage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
-      setCurrentEmail(user.email ?? "");
+      const email = user.email ?? "";
+      setCurrentEmail(email);
+      setNewEmail(email);
 
       const { data: profile } = await supabase
         .from("user_profiles")
@@ -134,7 +138,7 @@ export default function SettingsPage() {
   };
 
   const nameChanged = displayName !== originalDisplayName;
-  const emailChanged = newEmail.trim().length > 0;
+  const emailChanged = newEmail.trim().length > 0 && newEmail !== currentEmail;
   const passwordValid = newPassword.length >= 6 && confirmPassword.length >= 6;
   const passwordChanged = passwordValid && newPassword === confirmPassword;
 
@@ -190,15 +194,13 @@ export default function SettingsPage() {
         {/* メールアドレス */}
         <section className={sectionClass}>
           <p className="text-xs text-slate-400 tracking-wide">メールアドレス</p>
-          <p className="text-xs text-slate-600">現在: {currentEmail}</p>
           <form onSubmit={handleEmailSave} className="space-y-3">
             <div className="space-y-1">
-              <label className={labelClass}>新しいメールアドレス</label>
+              <label className={labelClass}>メールアドレス</label>
               <input
                 type="email"
                 value={newEmail}
                 onChange={e => { setNewEmail(e.target.value); setEmailMsg(""); }}
-                placeholder="new@email.com"
                 required
                 className={inputClass}
               />
@@ -219,31 +221,69 @@ export default function SettingsPage() {
         {/* パスワード */}
         <section className={sectionClass}>
           <p className="text-xs text-slate-400 tracking-wide">パスワード</p>
-          <div className="space-y-1">
-            <label className={labelClass}>現在のパスワード</label>
-            <p className="text-slate-600 text-sm tracking-widest px-1">••••••••</p>
-          </div>
           <form onSubmit={handlePasswordSave} className="space-y-3">
             <div className="space-y-1">
               <label className={labelClass}>新しいパスワード</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={e => { setNewPassword(e.target.value); setPasswordMsg(""); }}
-                placeholder="6文字以上"
-                minLength={6}
-                className={inputClass}
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={e => { setNewPassword(e.target.value); setPasswordMsg(""); }}
+                  placeholder="6文字以上"
+                  minLength={6}
+                  className={inputClass + " pr-10"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  aria-label={showNewPassword ? "パスワードを隠す" : "パスワードを表示"}
+                >
+                  {showNewPassword ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
               <label className={labelClass}>確認用パスワード</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={e => { setConfirmPassword(e.target.value); setPasswordMsg(""); }}
-                placeholder="もう一度入力"
-                className={inputClass}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={e => { setConfirmPassword(e.target.value); setPasswordMsg(""); }}
+                  placeholder="もう一度入力"
+                  className={inputClass + " pr-10"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  aria-label={showConfirmPassword ? "パスワードを隠す" : "パスワードを表示"}
+                >
+                  {showConfirmPassword ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               {newPassword && confirmPassword && newPassword !== confirmPassword && (
                 <p className="text-xs text-red-400 mt-1">パスワードが一致しません</p>
               )}
