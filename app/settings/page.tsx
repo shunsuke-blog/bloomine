@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [emailMsg, setEmailMsg] = useState("");
 
   // パスワード
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -107,11 +108,22 @@ export default function SettingsPage() {
     }
     setPasswordLoading(true);
     setPasswordMsg("");
+    // 現在のパスワードで再認証してから変更
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: currentEmail,
+      password: currentPassword,
+    });
+    if (authError) {
+      setPasswordMsg("現在のパスワードが正しくありません");
+      setPasswordLoading(false);
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
       setPasswordMsg("更新に失敗しました: " + error.message);
     } else {
       setPasswordMsg("パスワードを更新しました");
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }
@@ -140,7 +152,7 @@ export default function SettingsPage() {
 
   const nameChanged = displayName !== originalDisplayName;
   const emailChanged = newEmail.trim().length > 0 && newEmail !== currentEmail;
-  const passwordValid = newPassword.length >= 6 && confirmPassword.length >= 6;
+  const passwordValid = currentPassword.length >= 1 && newPassword.length >= 6 && confirmPassword.length >= 6;
   const passwordChanged = passwordValid && newPassword === confirmPassword;
 
   const inputClass = "w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm";
@@ -228,9 +240,10 @@ export default function SettingsPage() {
               <div className="relative">
                 <input
                   type={showCurrentPassword ? "text" : "password"}
-                  value="••••••••"
-                  readOnly
-                  className={inputClass + " pr-10 cursor-default opacity-50 select-none"}
+                  value={currentPassword}
+                  onChange={e => { setCurrentPassword(e.target.value); setPasswordMsg(""); }}
+                  placeholder="現在のパスワードを入力"
+                  className={inputClass + " pr-10"}
                 />
                 <button
                   type="button"
