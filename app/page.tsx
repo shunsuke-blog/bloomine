@@ -45,6 +45,8 @@ export default function NightGreenhouse() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [todayLogId, setTodayLogId] = useState<string | null>(null);
   const [isRedo, setIsRedo] = useState(false);
+  const [showWriteModal, setShowWriteModal] = useState(false);
+  const [writeText, setWriteText] = useState("");
   const router = useRouter();
 
   // ─── 音量（土グロー用） ───
@@ -193,6 +195,13 @@ export default function NightGreenhouse() {
     setIsRecording(!isRecording);
   };
 
+  const submitWriteLog = async () => {
+    if (!writeText.trim()) return;
+    setShowWriteModal(false);
+    await sendToLogs(writeText, !!todayLogId);
+    setWriteText("");
+  };
+
   const startRedoRecording = () => {
     setIsRedo(true);
     setTranscript("");
@@ -203,11 +212,12 @@ export default function NightGreenhouse() {
     setIsRecording(true);
   };
 
-  const sendToLogs = async (text: string) => {
+  const sendToLogs = async (text: string, redoOverride?: boolean) => {
     setIsLoading(true);
     const indexAtSend = cycleLogCount; // 送信時点のカウントを返しのインデックスに使う
+    const useRedo = redoOverride ?? isRedo;
     try {
-      if (isRedo && todayLogId) {
+      if (useRedo && todayLogId) {
         // やり直し: 既存ログを更新
         await fetch("/api/logs", {
           method: "PUT",
@@ -456,8 +466,9 @@ export default function NightGreenhouse() {
         </div>
       </div>
 
-      {/* TALK ボタン / やり直すボタン */}
+      {/* TALK / かく / やり直す ボタン */}
       <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center gap-6">
         {todayLogId && !isRedo && !isRecording ? (
           // 今日すでに録音済み → やり直すボタン（はなすと同じスタイル）
           <button
@@ -488,6 +499,21 @@ export default function NightGreenhouse() {
             <span className="text-xs">{isRecording ? "やめる" : "はなす"}</span>
           </button>
         )}
+        {/* かくボタン（録音中は非表示） */}
+        {!isRecording && (
+          <button
+            onClick={() => setShowWriteModal(true)}
+            disabled={!canRecord}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+              canRecord
+                ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
+                : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
+            }`}
+          >
+            <span className="text-xs">かく</span>
+          </button>
+        )}
+        </div>
         <p className={`text-xs text-slate-600 ${!canRecord && !isRecording && (!todayLogId || isRedo) ? "" : "invisible"}`}>スコアを選んでから話せます</p>
       </div>
 
@@ -495,6 +521,38 @@ export default function NightGreenhouse() {
         <p className="text-xs text-slate-500 italic max-w-md text-center">
           あなたの声: {transcript}
         </p>
+      )}
+
+      {/* テキスト入力モーダル */}
+      {showWriteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm bg-slate-900 border border-emerald-900/40 rounded-2xl p-5 space-y-4">
+            <p className="text-xs text-slate-400">今日の気持ちを書いてください</p>
+            <textarea
+              autoFocus
+              value={writeText}
+              onChange={(e) => setWriteText(e.target.value)}
+              rows={5}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 resize-none"
+              placeholder="今日あったことや感じたことを自由に…"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowWriteModal(false); setWriteText(""); }}
+                className="flex-1 py-2 rounded-xl text-xs text-slate-400 border border-slate-700 hover:border-slate-500 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={submitWriteLog}
+                disabled={!writeText.trim()}
+                className="flex-1 py-2 rounded-xl text-xs bg-emerald-700 text-emerald-100 hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                記録する
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* オンボーディング */}
