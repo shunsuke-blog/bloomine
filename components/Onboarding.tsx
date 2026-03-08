@@ -32,6 +32,13 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
       "「はなす」を押すと音声の記録が始まります。話し終えたら「やめる」を押すと自動的に保存されます。",
   },
   {
+    id: "write-button",
+    target: "write-button",
+    title: "文字で記録する",
+    description:
+      "「かく」を押すとテキストで記録できます。電車の中など声が出せない場所でも、その日の気持ちを残せます。",
+  },
+  {
     id: "calendar-button",
     target: "calendar-button",
     title: "過去のログを振り返る",

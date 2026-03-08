@@ -157,7 +157,8 @@ export default function NightGreenhouse() {
       analyserRef.current = analyser;
       const data = new Uint8Array(analyser.frequencyBinCount);
       const tick = () => {
-        analyser.getByteFrequencyData(data);
+        if (!analyserRef.current) return; // 停止済み → ループ終了
+        analyserRef.current.getByteFrequencyData(data);
         const avg = data.reduce((sum, v) => sum + v, 0) / (data.length * 255);
         rawVolume.set(avg);
         rafRef.current = requestAnimationFrame(tick);
@@ -481,7 +482,13 @@ export default function NightGreenhouse() {
                 : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
             }`}
           >
-            <span className="text-xs">やり直す</span>
+            {/* マイクアイコン（やり直す） */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor" stroke="none" opacity={0.9} />
+              <path d="M5 10a7 7 0 0 0 14 0" strokeLinecap="round" />
+              <line x1="12" y1="17" x2="12" y2="21" strokeLinecap="round" />
+              <line x1="9" y1="21" x2="15" y2="21" strokeLinecap="round" />
+            </svg>
           </button>
         ) : (
           // 通常の録音ボタン
@@ -496,12 +503,26 @@ export default function NightGreenhouse() {
                 : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
               }`}
           >
-            <span className="text-xs">{isRecording ? "やめる" : "はなす"}</span>
+            {isRecording ? (
+              /* 停止アイコン */
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="5" y="5" width="14" height="14" rx="2" />
+              </svg>
+            ) : (
+              /* マイクアイコン */
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor" stroke="none" opacity={0.9} />
+                <path d="M5 10a7 7 0 0 0 14 0" strokeLinecap="round" />
+                <line x1="12" y1="17" x2="12" y2="21" strokeLinecap="round" />
+                <line x1="9" y1="21" x2="15" y2="21" strokeLinecap="round" />
+              </svg>
+            )}
           </button>
         )}
         {/* かくボタン（録音中は非表示） */}
         {!isRecording && (
           <button
+            data-onboarding="write-button"
             onClick={() => setShowWriteModal(true)}
             disabled={!canRecord}
             className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
@@ -510,7 +531,11 @@ export default function NightGreenhouse() {
                 : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
             }`}
           >
-            <span className="text-xs">かく</span>
+            {/* ノートと鉛筆アイコン */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L14 13l-4 1 1-4 7.5-7.5z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         )}
         </div>
