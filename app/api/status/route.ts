@@ -42,21 +42,21 @@ export async function GET() {
     const unanalyzedCount = weekLogs?.filter(l => !l.is_analyzed).length ?? 0;
     const alreadyAnalyzed = totalCount >= 7 && (weekLogs?.every(l => l.is_analyzed) ?? false);
 
-    // 今日のログIDを取得（1日1回制限 + やり直し用）
-    // 日付の切り替わりは午前5時（appDateStr で5時間オフセット）
+    // 今日のログを取得（日付切り替わりは午前5時）
     const today = appDateStr(new Date(), timezone);
     const { gte, lt } = getDayUTCRange(today);
     const { data: todayLogs } = await supabase
       .from("daily_logs")
-      .select("id, created_at")
+      .select("id, created_at, transcript")
       .eq("user_id", user.id)
       .gte("created_at", gte)
       .lt("created_at", lt)
       .order("created_at", { ascending: false });
 
-    const todayLog = todayLogs?.find(
+    const todayLogsFiltered = todayLogs?.filter(
       l => appDateStr(new Date(l.created_at), timezone) === today
-    );
+    ) ?? [];
+    const todayLog = todayLogsFiltered[0]; // 最新ログ
 
     return NextResponse.json({
       weekNumber,
@@ -65,6 +65,8 @@ export async function GET() {
       isDay7Ready: totalCount >= 7 && !alreadyAnalyzed,
       alreadyAnalyzed,
       today_log_id: todayLog?.id ?? null,
+      today_log_transcript: todayLog?.transcript ?? null,
+      today_log_count: todayLogsFiltered.length,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
