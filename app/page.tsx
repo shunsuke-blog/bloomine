@@ -5,8 +5,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { PlantAnimation, getPlantStage } from "@/components/PlantAnimation";
 import { getQuestion, getResponse } from "@/lib/messages";
-import { useMotionValue, useSpring } from "framer-motion";
 import Onboarding, { ONBOARDING_STORAGE_KEY } from "@/components/Onboarding";
+import { EMOTION_SCORE_MIN, EMOTION_SCORE_MAX } from "@/lib/constants";
+import { useVolumeTracker } from "@/hooks/useVolumeTracker";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 type AnalyzeResult = {
   flowers: { id: string; flower_name: string; level: number }[];
@@ -28,13 +30,14 @@ type DayStatus = {
 
 export default function NightGreenhouse() {
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
   // responseIndex: 記録直前の cycleLogCount。null = 問いかけ表示
   const [responseIndex, setResponseIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
   const [emotionScore, setEmotionScore] = useState<number | null>(null);
+
+  const { smoothVolume, start: startVolumeTracking, stop: stopVolumeTracking } = useVolumeTracker();
+  const { transcript, setTranscript, recognition } = useSpeechRecognition();
   const [dayStatus, setDayStatus] = useState<DayStatus | null>(null);
   const [cycleLogCount, setCycleLogCount] = useState(0);
   const cycleInitialized = useRef(false);
@@ -54,21 +57,6 @@ export default function NightGreenhouse() {
   const [pendingSource, setPendingSource] = useState<"mic" | "write" | null>(null);
   const [logSaveAction, setLogSaveAction] = useState<"add" | "update" | null>(null);
   const router = useRouter();
-
-  // ─── 音量（土グロー用） ───
-  const rawVolume = useMotionValue(0);
-  const smoothVolume = useSpring(rawVolume, { damping: 18, stiffness: 200 });
-
-  const audioCtxRef  = useRef<AudioContext | null>(null);
-  const analyserRef  = useRef<AnalyserNode | null>(null);
-  const streamRef    = useRef<MediaStream | null>(null);
-  const rafRef       = useRef<number | null>(null);
-
-  // アンマウント時に音声リソースを解放
-  useEffect(() => {
-    return () => { stopVolumeTracking(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // 初回訪問時にオンボーディングを表示
   useEffect(() => {
@@ -112,23 +100,6 @@ export default function NightGreenhouse() {
 
   useEffect(() => {
     fetchDayStatus();
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recog = new SpeechRecognition();
-      recog.lang = "ja-JP";
-      recog.continuous = true;
-      recog.interimResults = true;
-      recog.onresult = (event: any) => {
-        let final = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) final += event.results[i][0].transcript;
-        }
-        setTranscript((prev) => prev + final);
-      };
-      setRecognition(recog);
-    }
   }, []);
 
   const fetchDayStatus = async () => {
@@ -151,39 +122,6 @@ export default function NightGreenhouse() {
     } catch { }
   };
 
-  const startVolumeTracking = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const ctx = new AudioContext();
-      audioCtxRef.current = ctx;
-      const source = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        if (!analyserRef.current) return; // 停止済み → ループ終了
-        analyserRef.current.getByteFrequencyData(data);
-        const avg = data.reduce((sum, v) => sum + v, 0) / (data.length * 255);
-        rawVolume.set(avg);
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      rafRef.current = requestAnimationFrame(tick);
-    } catch { /* マイクアクセス拒否 → 無音で継続 */ }
-  };
-
-  const stopVolumeTracking = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    audioCtxRef.current?.close();
-    audioCtxRef.current = null;
-    analyserRef.current = null;
-    streamRef.current = null;
-    rawVolume.set(0);
-  };
-
   const toggleRecording = () => {
     if (isRecording) {
       // 停止 → そのまま保存
@@ -203,9 +141,11 @@ export default function NightGreenhouse() {
       setTranscript("");
       setResponseIndex(null);
       setErrorMsg("");
-      recognition?.start();
-      startVolumeTracking();
-      setIsRecording(true);
+      startVolumeTracking().then((ok) => {
+        if (!ok) { setErrorMsg("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。"); return; }
+        try { recognition?.start(); } catch { /* 音声認識非対応環境 */ }
+        setIsRecording(true);
+      });
     }
   };
 
@@ -216,9 +156,11 @@ export default function NightGreenhouse() {
       setTranscript("");
       setResponseIndex(null);
       setErrorMsg("");
-      recognition?.start();
-      startVolumeTracking();
-      setIsRecording(true);
+      startVolumeTracking().then((ok) => {
+        if (!ok) { setErrorMsg("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。"); return; }
+        try { recognition?.start(); } catch { /* 音声認識非対応環境 */ }
+        setIsRecording(true);
+      });
     } else if (pendingSource === "write") {
       setShowWriteModal(true);
     }
@@ -476,7 +418,7 @@ export default function NightGreenhouse() {
           <span className="ml-2 text-slate-600">（1: 不快　10:快）</span>
         </p>
         <div className="flex justify-between gap-1">
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+          {Array.from({ length: EMOTION_SCORE_MAX - EMOTION_SCORE_MIN + 1 }, (_, i) => i + EMOTION_SCORE_MIN).map((n) => (
             <button
               key={n}
               onClick={() => setEmotionScore(n)}

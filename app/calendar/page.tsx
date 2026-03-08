@@ -23,8 +23,9 @@ export default function CalendarPage() {
   const [dayLogs, setDayLogs] = useState<DayLog[] | null>(null);
   const [isLoadingDay, setIsLoadingDay] = useState(false);
 
-  // 月ごとのキャッシュ: key = "2026-03"
-  const monthCache = useRef<Map<string, string[]>>(new Map());
+  // 月ごとのキャッシュ: key = "2026-03"（TTL 60秒）
+  const monthCache = useRef<Map<string, { dates: string[]; cachedAt: number }>>(new Map());
+  const CACHE_TTL = 60_000;
 
   useEffect(() => {
     loadMonth(year, month);
@@ -33,8 +34,9 @@ export default function CalendarPage() {
 
   const loadMonth = async (y: number, m: number) => {
     const key = `${y}-${String(m).padStart(2, "0")}`;
-    if (monthCache.current.has(key)) {
-      setLogDates(new Set(monthCache.current.get(key)));
+    const cached = monthCache.current.get(key);
+    if (cached && Date.now() - cached.cachedAt < CACHE_TTL) {
+      setLogDates(new Set(cached.dates));
       return;
     }
     setIsLoadingMonth(true);
@@ -42,7 +44,7 @@ export default function CalendarPage() {
       const res = await fetch(`/api/calendar?year=${y}&month=${m}`);
       if (res.ok) {
         const data: { dates: string[] } = await res.json();
-        monthCache.current.set(key, data.dates);
+        monthCache.current.set(key, { dates: data.dates, cachedAt: Date.now() });
         setLogDates(new Set(data.dates));
       }
     } finally {

@@ -14,8 +14,30 @@ export async function POST(req: Request) {
     }
 
     const { week_number } = await req.json();
-    if (!week_number) {
-      return NextResponse.json({ error: "week_number が必要です" }, { status: 400 });
+    if (!Number.isInteger(week_number) || week_number < 1) {
+      return NextResponse.json({ error: "week_number が不正です" }, { status: 400 });
+    }
+
+    // レート制限: 直近の分析完了から24時間以内は拒否
+    const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
+    const { data: recentAnalyzed } = await supabase
+      .from("daily_logs")
+      .select("updated_at")
+      .eq("user_id", user.id)
+      .eq("is_analyzed", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentAnalyzed?.updated_at) {
+      const elapsed = Date.now() - new Date(recentAnalyzed.updated_at).getTime();
+      if (elapsed < RATE_LIMIT_MS) {
+        const waitMin = Math.ceil((RATE_LIMIT_MS - elapsed) / 60_000);
+        return NextResponse.json(
+          { error: `分析は24時間に1回です。あと約${waitMin}分後にお試しください。` },
+          { status: 429 }
+        );
+      }
     }
 
     // 対象週のログを取得
