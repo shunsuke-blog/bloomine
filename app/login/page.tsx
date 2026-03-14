@@ -93,8 +93,8 @@ function LoginForm() {
     return (
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-          <p className="text-xs text-slate-500">Night Greenhouse</p>
+          <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
+          <p className="text-xs text-slate-500">Bloomine</p>
         </div>
         <div className="p-6 bg-slate-900/40 rounded-2xl border border-emerald-900/30 text-center space-y-3">
           <p className="text-emerald-400 text-sm">リセットメールを送信しました</p>
@@ -118,8 +118,8 @@ function LoginForm() {
     return (
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-          <p className="text-xs text-slate-500">Night Greenhouse</p>
+          <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
+          <p className="text-xs text-slate-500">Bloomine</p>
         </div>
         <div className="p-6 bg-slate-900/40 rounded-2xl border border-emerald-900/30 text-center space-y-3">
           <p className="text-emerald-400 text-sm">確認メールを送信しました</p>
@@ -142,8 +142,8 @@ function LoginForm() {
   return (
     <div className="w-full max-w-sm space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-        <p className="text-xs text-slate-500">Night Greenhouse</p>
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
+        <p className="text-xs text-slate-500">Bloomine</p>
       </div>
 
       {/* モード切替（パスワードリセット中は非表示） */}

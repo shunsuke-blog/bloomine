@@ -54,8 +54,8 @@ function ResetPasswordForm() {
   return (
     <div className="w-full max-w-sm space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-        <p className="text-xs text-slate-500">Night Greenhouse</p>
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
+        <p className="text-xs text-slate-500">Bloomine</p>
       </div>
 
       {!sessionReady && !error ? (

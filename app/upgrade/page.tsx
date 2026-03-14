@@ -70,15 +70,15 @@ function UpgradeContent() {
   return (
     <div className="w-full max-w-sm space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-        <p className="text-xs text-slate-500">Night Greenhouse</p>
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">サブスクリプション</h1>
+        <p className="text-xs text-slate-500">subscription</p>
       </div>
 
       {/* 成功・キャンセルメッセージ */}
       {success && (
         <div className="p-4 bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-center space-y-2">
           <p className="text-emerald-300 text-sm">ご契約ありがとうございます</p>
-          <p className="text-slate-400 text-xs">引き続き夜の温室をお楽しみください。</p>
+          <p className="text-slate-400 text-xs">引き続き心の土壌をお楽しみください。</p>
         </div>
       )}
       {canceled && (
@@ -153,9 +153,9 @@ function UpgradeContent() {
             </div>
             <ul className="space-y-2">
               {[
-                "7つのログで分析（無制限）",
+                "あなたのログに基づくAI自己分析（無制限）",
                 "AIによる傾聴と問いかけ",
-                "「強みの庭」「価値観の倉庫」への無制限アクセス",
+                "「強みの庭」「価値観の宝庫」への無制限アクセス",
                 "強みと価値観の蓄積を振り返る",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2 text-xs text-slate-400">
@@ -193,7 +193,7 @@ function UpgradeContent() {
         onClick={() => router.push("/")}
         className="w-full text-xs text-slate-600 hover:text-slate-400 transition-colors"
       >
-        ← 温室へ戻る
+        ← 心の土壌へ戻る
       </button>
     </div>
   );

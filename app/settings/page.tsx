@@ -43,6 +43,9 @@ export default function SettingsPage() {
   // ログアウト確認
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // サブスクリプション
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -53,12 +56,13 @@ export default function SettingsPage() {
 
       const { data: profile } = await supabase
         .from("user_profiles")
-        .select("display_name")
+        .select("display_name, subscription_status")
         .eq("id", user.id)
         .maybeSingle();
       const name = profile?.display_name ?? "";
       setDisplayName(name);
       setOriginalDisplayName(name);
+      setIsSubscribed(profile?.subscription_status === "active");
     };
     load();
   }, [router]);
@@ -170,7 +174,7 @@ export default function SettingsPage() {
     <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center px-4 pt-8 pb-10 sm:px-6 sm:pt-10 space-y-6">
       <div className="w-full max-w-md relative flex items-center justify-center">
         <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          ← 温室へ戻る
+          ← 心の土壌へ戻る
         </Link>
         <h1 className="text-sm font-light tracking-widest text-slate-400">設定</h1>
       </div>
@@ -435,17 +439,19 @@ export default function SettingsPage() {
             >
               プランを確認する
             </a>
-            <button
-              type="button"
-              onClick={async () => {
-                const res = await fetch("/api/stripe/create-portal", { method: "POST" });
-                const data = await res.json();
-                if (data.url) window.location.href = data.url;
-              }}
-              className="flex-1 py-2 border border-slate-700 rounded-xl text-slate-400 text-xs hover:border-slate-500 transition-colors"
-            >
-              支払い管理
-            </button>
+            {isSubscribed && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await fetch("/api/stripe/create-portal", { method: "POST" });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                }}
+                className="flex-1 py-2 border border-slate-700 rounded-xl text-slate-400 text-xs hover:border-slate-500 transition-colors"
+              >
+                支払い管理
+              </button>
+            )}
           </div>
         </section>
 

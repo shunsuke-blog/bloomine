@@ -215,7 +215,7 @@ export default function NightGreenhouse() {
   if (analyzeResult) {
     return (
       <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
-        <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
 
         {/* 花が咲いた植物 */}
         <PlantAnimation stage="flower" />
@@ -262,7 +262,7 @@ export default function NightGreenhouse() {
                 href="/treasures"
                 className="block w-full py-3 text-center bg-amber-900/30 border border-amber-700/50 rounded-2xl text-amber-300 text-sm tracking-wide hover:bg-amber-900/50 transition-all"
               >
-                価値観の倉庫を見る →
+                価値観の宝庫を見る →
               </Link>
             </div>
           )}
@@ -276,7 +276,7 @@ export default function NightGreenhouse() {
 
       {/* タイトル行: 左:設定 / 中央:タイトル */}
       <div className="w-full max-w-md relative flex items-center justify-center">
-        <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
         <Link
           href="/settings"
           className="absolute left-0 w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
@@ -289,13 +289,13 @@ export default function NightGreenhouse() {
         </Link>
       </div>
 
-      {/* ナビゲーション行: カレンダー / 価値観の倉庫 / 強みの庭 */}
+      {/* ナビゲーション行: カレンダー / 価値観の宝庫 / 強みの庭 */}
       <div className="flex items-center gap-2">
         <Link
           href="/calendar"
           data-onboarding="calendar-button"
           className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="記録の庭"
+          aria-label="記録の足跡"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -308,7 +308,7 @@ export default function NightGreenhouse() {
           href="/treasures"
           data-onboarding="treasures-button"
           className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="価値観の倉庫"
+          aria-label="価値観の宝庫"
         >
           {/* ダイヤモンドアイコン */}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

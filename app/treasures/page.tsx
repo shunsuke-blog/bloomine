@@ -156,7 +156,7 @@ export default function TreasuresPage() {
           ← 温室へ戻る
         </Link>
         <div className="text-center">
-          <h1 className="text-xl font-light tracking-widest text-amber-400">価値観の倉庫</h1>
+          <h1 className="text-xl font-light tracking-widest text-amber-400">価値観の宝庫</h1>
           <p className="text-xs text-slate-600 mt-1">あなたが大切にしてきた、宝物たち</p>
         </div>
       </div>

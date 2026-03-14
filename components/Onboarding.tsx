@@ -48,9 +48,9 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "treasures-button",
     target: "treasures-button",
-    title: "価値観の倉庫を見る",
+    title: "価値観の宝庫を見る",
     description:
-      "7回の記録から見つかった「あなたが大切にしている価値観」が宝物として蓄積されます。このボタンから価値観の倉庫へ移動できます。",
+      "7回の記録から見つかった「あなたが大切にしている価値観」が宝物として蓄積されます。このボタンから価値観の宝庫へ移動できます。",
   },
   {
     id: "seeds-button",
@@ -61,7 +61,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
 ];
 
-export const ONBOARDING_STORAGE_KEY = "night_greenhouse_onboarded";
+export const ONBOARDING_STORAGE_KEY = "bloomine_onboarded";
 
 // ─── 型 ────────────────────────────────────────────────────────────────────
 type Rect = { top: number; left: number; width: number; height: number };
