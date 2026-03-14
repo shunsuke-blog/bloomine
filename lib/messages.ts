@@ -9,7 +9,7 @@
 
 type JournalCategory = "strength" | "value" | "emotion";
 
-interface JournalPrompt {
+export interface JournalPrompt {
   id: string;
   category: JournalCategory;
   text: string;
@@ -242,6 +242,16 @@ const RESPONSES = [
   "今日もよく話してくれましたね。その言葉が、あなたの中で少しずつ育っています。",
   "今夜もここに来てくれて、ありがとうございます。あなたの一日が、この土に刻まれました。",
 ] as const;
+
+/**
+ * 各カテゴリからランダムに1問ずつ選んだ3問 + null（自由記述）を返す
+ */
+export function getRandomQuestions(): (JournalPrompt | null)[] {
+  const strength = STRENGTH_PROMPTS[Math.floor(Math.random() * STRENGTH_PROMPTS.length)];
+  const value = VALUE_PROMPTS[Math.floor(Math.random() * VALUE_PROMPTS.length)];
+  const emotion = EMOTION_PROMPTS[Math.floor(Math.random() * EMOTION_PROMPTS.length)];
+  return [strength, value, emotion, null];
+}
 
 /**
  * cycleLogCount に対応する問いかけを返す

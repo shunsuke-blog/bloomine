@@ -30,7 +30,7 @@ function validateEmotionScore(score: unknown): number | null {
 
 export async function POST(req: Request) {
   try {
-    const { transcript, emotion_score } = await req.json();
+    const { transcript, emotion_score, prompt_id } = await req.json();
 
     if (!transcript?.trim()) {
       return NextResponse.json({ error: "メッセージが空です" }, { status: 400 });
@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         transcript,
         emotion_score: validateEmotionScore(emotion_score),
         week_number,
+        prompt_id: typeof prompt_id === "string" ? prompt_id : null,
       })
       .select("id")
       .single();

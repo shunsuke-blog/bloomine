@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { PlantAnimation, getPlantStage } from "@/components/PlantAnimation";
-import { getQuestion, getResponse } from "@/lib/messages";
+import { getQuestion, getResponse, getRandomQuestions, type JournalPrompt } from "@/lib/messages";
 import Onboarding, { ONBOARDING_STORAGE_KEY } from "@/components/Onboarding";
 import { EMOTION_SCORE_MIN, EMOTION_SCORE_MAX } from "@/lib/constants";
 import { useVolumeTracker } from "@/hooks/useVolumeTracker";
@@ -57,6 +57,9 @@ export default function NightGreenhouse() {
   const [showLogChoiceModal, setShowLogChoiceModal] = useState(false);
   const [pendingSource, setPendingSource] = useState<"mic" | "write" | null>(null);
   const [logSaveAction, setLogSaveAction] = useState<"add" | "update" | null>(null);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [questionChoices, setQuestionChoices] = useState<(JournalPrompt | null)[]>([]);
+  const [selectedPrompt, setSelectedPrompt] = useState<JournalPrompt | null | undefined>(undefined);
   const router = useRouter();
 
   // 初回訪問時にオンボーディングを表示
@@ -98,6 +101,17 @@ export default function NightGreenhouse() {
     } catch { }
   };
 
+  const startRecording = () => {
+    setTranscript("");
+    setResponseIndex(null);
+    setErrorMsg("");
+    startVolumeTracking().then((ok) => {
+      if (!ok) { setErrorMsg("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。"); return; }
+      try { recognition?.start(); } catch { /* 音声認識非対応環境 */ }
+      setIsRecording(true);
+    });
+  };
+
   const toggleRecording = () => {
     if (isRecording) {
       // 停止 → そのまま保存
@@ -108,20 +122,28 @@ export default function NightGreenhouse() {
       }
       setIsRecording(false);
     } else {
+      // 質問選択モーダルを先に表示
+      setQuestionChoices(getRandomQuestions());
+      setPendingSource("mic");
+      setShowQuestionModal(true);
+    }
+  };
+
+  const handleQuestionSelect = (prompt: JournalPrompt | null) => {
+    setSelectedPrompt(prompt);
+    setShowQuestionModal(false);
+    if (pendingSource === "mic") {
       if (todayLogId) {
-        // 2回目以降 → 先にポップアップ表示
-        setPendingSource("mic");
         setShowLogChoiceModal(true);
-        return;
+      } else {
+        startRecording();
       }
-      setTranscript("");
-      setResponseIndex(null);
-      setErrorMsg("");
-      startVolumeTracking().then((ok) => {
-        if (!ok) { setErrorMsg("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。"); return; }
-        try { recognition?.start(); } catch { /* 音声認識非対応環境 */ }
-        setIsRecording(true);
-      });
+    } else if (pendingSource === "write") {
+      if (todayLogId) {
+        setShowLogChoiceModal(true);
+      } else {
+        setShowWriteModal(true);
+      }
     }
   };
 
@@ -129,14 +151,7 @@ export default function NightGreenhouse() {
     setLogSaveAction(action);
     setShowLogChoiceModal(false);
     if (pendingSource === "mic") {
-      setTranscript("");
-      setResponseIndex(null);
-      setErrorMsg("");
-      startVolumeTracking().then((ok) => {
-        if (!ok) { setErrorMsg("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。"); return; }
-        try { recognition?.start(); } catch { /* 音声認識非対応環境 */ }
-        setIsRecording(true);
-      });
+      startRecording();
     } else if (pendingSource === "write") {
       setShowWriteModal(true);
     }
@@ -165,7 +180,7 @@ export default function NightGreenhouse() {
         const res = await fetch("/api/logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript: text, emotion_score: emotionScore }),
+          body: JSON.stringify({ transcript: text, emotion_score: emotionScore, prompt_id: selectedPrompt?.id ?? null }),
         });
         const data = await res.json();
         if (data.log_id) setTodayLogId(data.log_id);
@@ -359,6 +374,8 @@ export default function NightGreenhouse() {
           <p className="text-slate-500 leading-relaxed italic text-sm">{errorMsg}</p>
         ) : responseIndex !== null ? (
           <p className="text-slate-300 leading-relaxed italic text-sm">{getResponse(responseIndex)}</p>
+        ) : isRecording && selectedPrompt ? (
+          <p className="text-slate-300 leading-relaxed italic text-sm">「{selectedPrompt.text}」</p>
         ) : (
           <p className="text-slate-300 leading-relaxed italic text-sm">{getQuestion(cycleLogCount, displayName)}</p>
         )}
@@ -454,8 +471,9 @@ export default function NightGreenhouse() {
             <button
               data-onboarding="write-button"
               onClick={() => {
-                if (todayLogId) { setPendingSource("write"); setShowLogChoiceModal(true); }
-                else setShowWriteModal(true);
+                setQuestionChoices(getRandomQuestions());
+                setPendingSource("write");
+                setShowQuestionModal(true);
               }}
               disabled={!canRecord}
               className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
@@ -478,6 +496,35 @@ export default function NightGreenhouse() {
         <p className="text-xs text-slate-500 italic max-w-md text-center">
           あなたの声: {transcript}
         </p>
+      )}
+
+      {/* 質問選択モーダル */}
+      {showQuestionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm bg-slate-900 border border-emerald-900/40 rounded-2xl p-5 space-y-3">
+            <p className="text-xs text-slate-400 text-center">今日はどんなことを話しますか？</p>
+            {questionChoices.map((prompt, i) => (
+              <button
+                key={prompt?.id ?? "free"}
+                onClick={() => handleQuestionSelect(prompt)}
+                className="w-full text-left px-4 py-3 rounded-xl border border-slate-700 hover:border-emerald-700 hover:bg-emerald-950/30 transition-all space-y-1"
+              >
+                <p className="text-sm text-slate-200 leading-snug">
+                  {prompt ? prompt.text : "自由に話す・書く"}
+                </p>
+                {prompt && (
+                  <p className="text-xs text-slate-500">{prompt.hint}</p>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={() => { setShowQuestionModal(false); setPendingSource(null); }}
+              className="w-full py-2 rounded-xl text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ログ選択ポップアップ（追加 / 更新 / キャンセル） */}
@@ -518,14 +565,16 @@ export default function NightGreenhouse() {
       {showWriteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-sm bg-slate-900 border border-emerald-900/40 rounded-2xl p-5 space-y-4">
-            <p className="text-xs text-slate-400">今日の気持ちを書いてください</p>
+            <p className="text-xs text-slate-400">
+              {selectedPrompt ? selectedPrompt.text : "今日の気持ちを書いてください"}
+            </p>
             <textarea
               autoFocus
               value={writeText}
               onChange={(e) => setWriteText(e.target.value)}
               rows={5}
               className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 resize-none"
-              placeholder="今日あったことや感じたことを自由に…"
+              placeholder={selectedPrompt ? selectedPrompt.hint + "…" : "今日あったことや感じたことを自由に…"}
             />
             <div className="flex gap-3">
               <button
