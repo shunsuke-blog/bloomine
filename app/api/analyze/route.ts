@@ -147,7 +147,7 @@ export async function POST() {
               os_description: fragment.os_description ?? null,
               logic_reflection: fragment.logic_reflection ?? null,
               environment_condition: fragment.environment_condition ?? null,
-              level: 1,
+              level: flowerLevelGain,
             })
             .select("id")
             .single();
@@ -233,7 +233,7 @@ export async function POST() {
               keywords: fragment.keywords ?? [],
               fulfillment_state: fragment.fulfillment_state ?? null,
               threat_signal: fragment.threat_signal ?? null,
-              level: 1,
+              level: treasureLevelGain,
             })
             .select("id")
             .single();
