@@ -15,7 +15,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     target: "plant-animation",
     title: "記録が花を育てます",
     description:
-      "日々の想いを記録するたびに種が成長し、7回で花が咲きます。あなたの言葉がタネの栄養になっています。",
+      "日々の想いを記録するたびに種が成長し、花が咲きます。あなたの言葉がタネの栄養になっています。",
   },
   {
     id: "emotion-score",
@@ -29,19 +29,19 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     target: "talk-button",
     title: "声で記録する",
     description:
-      "「はなす」を押すと音声の記録が始まります。話し終えたら「やめる」を押すと自動的に保存されます。",
+      "このボタンを押すと音声の記録が始まります。停止ボタンを押すと自動的に保存されます。",
   },
   {
     id: "write-button",
     target: "write-button",
     title: "文字で記録する",
     description:
-      "「かく」を押すとテキストで記録できます。電車の中など声が出せない場所でも、その日の気持ちを残せます。",
+      "このボタンを押すとテキストで記録できます。電車の中など声が出せない場所でも、その日の気持ちを残せます。",
   },
   {
     id: "calendar-button",
     target: "calendar-button",
-    title: "過去のログを振り返る",
+    title: "記録の足跡",
     description:
       "カレンダーから過去の記録をいつでも読み返せます。あなたの言葉の積み重ねがここに残ります。",
   },
@@ -50,14 +50,14 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     target: "treasures-button",
     title: "価値観の宝庫を見る",
     description:
-      "7回の記録から見つかった「あなたが大切にしている価値観」が宝物として蓄積されます。このボタンから価値観の宝庫へ移動できます。",
+      "あなたの言葉から見つかった「あなたが大切にしている価値観」が宝物として大切し保管されます。このボタンから一覧で確認することができます。",
   },
   {
     id: "seeds-button",
     target: "seeds-button",
-    title: "咲いた花（強み）を見る",
+    title: "咲いた花を見る",
     description:
-      "7回の記録から分析された「あなたの強み」が花として現れます。このボタンから強みの庭へ移動できます。",
+      "あなたの言葉から見つかった「あなたの強み」が花として咲いています。このボタンから一覧で確認することができます。",
   },
 ];
 

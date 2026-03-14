@@ -70,7 +70,7 @@ function UpgradeContent() {
   return (
     <div className="w-full max-w-sm space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-light tracking-widest text-emerald-400">サブスクリプション</h1>
+        <h1 className="text-2xl font-light tracking-widest text-emerald-400">プランを確認する</h1>
         <p className="text-xs text-slate-500">subscription</p>
       </div>
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { calcWeekNumber, getDayUTCRange, appDateStr } from "@/lib/date-utils";
+import { calcWeekNumber, appDateStr } from "@/lib/date-utils";
 import { getAnalysisStatus } from "@/lib/subscription";
 
 export async function GET() {
@@ -11,9 +11,9 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
-    // プロフィール + 最初のログ + 今日のログを並列取得
-    const today = appDateStr(new Date(), "Asia/Tokyo"); // timezoneはプロフィール取得後に補正
-    const [profileResult, firstLogResult, analysisStatus] = await Promise.all([
+    // タイムゾーンのズレを考慮して過去48時間分を取得し、プロフィール等と並列実行
+    const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const [profileResult, firstLogResult, analysisStatus, recentLogsResult] = await Promise.all([
       supabase
         .from("user_profiles")
         .select("timezone, display_name")
@@ -27,6 +27,12 @@ export async function GET() {
         .limit(1)
         .single(),
       getAnalysisStatus(supabase, user.id),
+      supabase
+        .from("daily_logs")
+        .select("id, created_at, transcript")
+        .eq("user_id", user.id)
+        .gte("created_at", since48h)
+        .order("created_at", { ascending: false }),
     ]);
 
     const timezone = profileResult.data?.timezone ?? "Asia/Tokyo";
@@ -35,16 +41,8 @@ export async function GET() {
       ? calcWeekNumber(new Date(firstLogResult.data.created_at), timezone)
       : 1;
 
-    // 今日のログ取得
     const todayStr = appDateStr(new Date(), timezone);
-    const { gte, lt } = getDayUTCRange(todayStr);
-    const { data: todayLogsData } = await supabase
-      .from("daily_logs")
-      .select("id, created_at, transcript")
-      .eq("user_id", user.id)
-      .gte("created_at", gte)
-      .lt("created_at", lt)
-      .order("created_at", { ascending: false });
+    const todayLogsData = recentLogsResult.data;
 
     const todayLogsFiltered = (todayLogsData ?? []).filter(
       l => appDateStr(new Date(l.created_at), timezone) === todayStr

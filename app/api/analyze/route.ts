@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT } from "@/lib/prompts";
+import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT, ANALYZE_SYSTEM_PROMPT } from "@/lib/prompts";
 import { getAnalysisStatus } from "@/lib/subscription";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
@@ -51,7 +51,7 @@ export async function POST() {
     // 未分析ログを取得（前回分析以降の全件）
     const { data: logs, error: logsError } = await supabase
       .from("daily_logs")
-      .select("id, transcript, emotion_score, is_analyzed")
+      .select("id, transcript, emotion_score, is_analyzed, week_number")
       .eq("user_id", user.id)
       .eq("is_analyzed", false)
       .order("created_at", { ascending: true });
@@ -77,10 +77,12 @@ export async function POST() {
       generationConfig: { responseMimeType: "application/json" },
     });
 
-    // 強み分析・価値観分析を並列実行
-    const [flowerResult, treasureResult] = await Promise.all([
+    // 強み分析・価値観分析・OS命名を並列実行
+    const logText = logInputs.map((l) => `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${l.transcript}`).join("\n\n---\n\n");
+    const [flowerResult, treasureResult, seedResult] = await Promise.all([
       model.generateContent(FRAGMENT_ANALYZE_PROMPT(logInputs, existingFlowers ?? [])),
       model.generateContent(VALUE_ANALYZE_PROMPT(logInputs, existingTreasures ?? [])),
+      model.generateContent({ contents: [{ role: "user", parts: [{ text: logText }] }], systemInstruction: ANALYZE_SYSTEM_PROMPT }),
     ]);
 
     // ── 強みの処理 ────────────────────────────────────────────────────────────
@@ -174,6 +176,8 @@ export async function POST() {
         treasure_name?: string;
         description?: string;
         keywords?: string[];
+        fulfillment_state?: string;
+        threat_signal?: string;
       }[];
     };
 
@@ -223,6 +227,8 @@ export async function POST() {
               treasure_name: name,
               description: fragment.description ?? null,
               keywords: fragment.keywords ?? [],
+              fulfillment_state: fragment.fulfillment_state ?? null,
+              threat_signal: fragment.threat_signal ?? null,
               level: 1,
             })
             .select("id")
@@ -244,6 +250,26 @@ export async function POST() {
         });
       }
     }
+
+    // ── タネ（OS命名）の処理 ──────────────────────────────────────────────────
+    const { seed_name, os_description, logic_reflection, environment_condition } = JSON.parse(seedResult.response.text()) as {
+      seed_name: string;
+      os_description: string;
+      logic_reflection: string;
+      environment_condition: string;
+    };
+    const week_number = logs[0]?.week_number ?? 1;
+    await supabase.from("seeds_collection").upsert(
+      {
+        user_id: user.id,
+        week_number,
+        seed_name,
+        os_description,
+        logic_reflection,
+        environment_condition,
+      },
+      { onConflict: "user_id,week_number" }
+    );
 
     // ログを分析済みにマーク
     const logIds = logs.map(l => l.id);
