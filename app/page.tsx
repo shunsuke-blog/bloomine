@@ -225,7 +225,7 @@ export default function NightGreenhouse() {
   };
 
   const canRecord = emotionScore !== null;
-  const plantStage = analyzeResult ? "flower" : getPlantStage(cycleLogCount);
+  const plantStage = analyzeResult ? "flower" : getPlantStage(cycleLogCount, dayStatus?.cycleTarget ?? 3);
 
   // 分析完了後の表示
   if (analyzeResult) {

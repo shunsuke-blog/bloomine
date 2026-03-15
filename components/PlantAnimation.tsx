@@ -12,15 +12,17 @@ export type PlantStage =
   | "preflower"  // day 7 — 蕾がほころび始める（ピンクがわずかに覗く）
   | "flower";    // 分析後 — 満開
 
-export function getPlantStage(count: number): PlantStage {
-  if (count >= 7) return "preflower";
-  if (count >= 6) return "bud";
-  if (count >= 5) return "grown";
-  if (count >= 4) return "young";
-  if (count >= 3) return "seedling";
-  if (count >= 2) return "sprout";
-  if (count >= 1) return "emergence";
-  return "soil";
+const GROWTH_STAGES: PlantStage[] = [
+  "soil", "emergence", "sprout", "seedling", "young", "grown", "bud", "preflower",
+];
+
+export function getPlantStage(count: number, cycleTarget = 7): PlantStage {
+  if (cycleTarget <= 0) return "soil";
+  const idx = Math.min(
+    Math.round((count / cycleTarget) * (GROWTH_STAGES.length - 1)),
+    GROWTH_STAGES.length - 1,
+  );
+  return GROWTH_STAGES[idx];
 }
 
 // ─── カラーパレット ───
