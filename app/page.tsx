@@ -387,32 +387,20 @@ export default function NightGreenhouse() {
         <PlantAnimation stage={plantStage} volume={smoothVolume} />
       </div>
 
-      {/* 分析ボタン */}
-      {dayStatus?.canAnalyze && (
+      {/* 分析ボタン（無料上限時はアップグレード誘導） */}
+      {(dayStatus?.canAnalyze || (dayStatus?.freeAnalysesLeft === 0 && !dayStatus?.isSubscribed)) && (
         <div className="max-w-md w-full">
           <button
-            onClick={runAnalyze}
+            onClick={dayStatus?.canAnalyze ? runAnalyze : () => router.push("/upgrade")}
             disabled={isAnalyzing}
             className="w-full py-4 bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all disabled:opacity-50"
           >
             {isAnalyzing ? "強みの花が咲いています..." : "✦ 強みの花を咲かせる"}
           </button>
           <p className="text-center text-xs text-slate-600 mt-2">
-            {cycleLogCount}つのログから強みと価値観を抽出します
-          </p>
-        </div>
-      )}
-      {/* 無料分析上限到達 → サブスク誘導ボタン */}
-      {!dayStatus?.canAnalyze && dayStatus?.freeAnalysesLeft === 0 && !dayStatus?.isSubscribed && (
-        <div className="max-w-md w-full">
-          <button
-            onClick={() => router.push("/upgrade")}
-            className="w-full py-4 bg-slate-800/60 border border-slate-700 rounded-2xl text-slate-400 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
-          >
-            ✦ 続けて強みの花を咲かせる
-          </button>
-          <p className="text-center text-xs text-slate-600 mt-2">
-            月額プランで引き続き分析できます
+            {dayStatus?.canAnalyze
+              ? `${cycleLogCount}つのログから強みと価値観を抽出します`
+              : "プランを確認して、引き続き分析できます"}
           </p>
         </div>
       )}
