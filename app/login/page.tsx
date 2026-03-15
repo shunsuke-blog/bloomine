@@ -118,8 +118,8 @@ function LoginForm() {
     return (
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
-          <p className="text-xs text-slate-500">Bloomine</p>
+          <h1 className="text-2xl font-light tracking-widest text-emerald-400">BLOOMEINE</h1>
+          <p className="text-xs text-slate-500">ブルーマイン</p>
         </div>
         <div className="p-6 bg-slate-900/40 rounded-2xl border border-emerald-900/30 text-center space-y-3">
           <p className="text-emerald-400 text-sm">確認メールを送信しました</p>
@@ -153,8 +153,8 @@ function LoginForm() {
             type="button"
             onClick={() => { setMode("signin"); setError(""); setEmail(""); setPassword(""); setDisplayName(""); }}
             className={`flex-1 py-2 text-xs transition-colors ${mode === "signin"
-                ? "bg-emerald-900/40 text-emerald-300"
-                : "text-slate-500 hover:text-slate-300"
+              ? "bg-emerald-900/40 text-emerald-300"
+              : "text-slate-500 hover:text-slate-300"
               }`}
           >
             ログイン
@@ -163,8 +163,8 @@ function LoginForm() {
             type="button"
             onClick={() => { setMode("signup"); setError(""); setEmail(""); setPassword(""); setDisplayName(""); }}
             className={`flex-1 py-2 text-xs transition-colors ${mode === "signup"
-                ? "bg-emerald-900/40 text-emerald-300"
-                : "text-slate-500 hover:text-slate-300"
+              ? "bg-emerald-900/40 text-emerald-300"
+              : "text-slate-500 hover:text-slate-300"
               }`}
           >
             新規登録

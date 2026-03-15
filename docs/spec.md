@@ -1,8 +1,9 @@
-# 夜の温室 (Night Greenhouse) — 技術仕様書
+# bloomine — 技術仕様書
 
-**バージョン:** v4.0
-**最終更新:** 2026年3月8日
-**ステータス:** Phase 0〜5 完了・本番稼働中
+**バージョン:** v5.0
+**最終更新:** 2026年3月15日
+**ステータス:** Phase 0〜6 完了・本番稼働中
+**ドメイン:** https://bloomines.com
 
 ---
 
@@ -12,12 +13,14 @@
 2. [システムアーキテクチャ](#2-システムアーキテクチャ)
 3. [機能要件](#3-機能要件)
 4. [データモデル](#4-データモデル-supabase)
-5. [デザイン＆UX指針](#5-デザインux指針)
-6. [アニメーション仕様](#6-アニメーション仕様)
-7. [非機能要件](#7-非機能要件)
-8. [ファイル構成](#8-ファイル構成)
-9. [開発チェックリスト](#9-開発チェックリスト)
-10. [メモ・決定事項ログ](#10-メモ決定事項ログ)
+5. [AIプロンプト設計](#5-aiプロンプト設計)
+6. [サブスクリプション設計](#6-サブスクリプション設計)
+7. [デザイン＆UX指針](#7-デザインux指針)
+8. [アニメーション仕様](#8-アニメーション仕様)
+9. [非機能要件](#9-非機能要件)
+10. [ファイル構成](#10-ファイル構成)
+11. [開発チェックリスト](#11-開発チェックリスト)
+12. [メモ・決定事項ログ](#12-メモ決定事項ログ)
 
 ---
 
@@ -49,7 +52,8 @@
 Next.js Route Handlers (API層)
        ↕ SDK
   ├─ Supabase (PostgreSQL + Auth)
-  └─ Gemini 2.5 Flash (AI Engine)
+  ├─ Gemini 2.5 Flash (AI Engine)
+  └─ Stripe (決済・サブスクリプション)
 ```
 
 ### 技術スタック
@@ -63,6 +67,7 @@ Next.js Route Handlers (API層)
 | AI Engine   | `Gemini 2.5 Flash`        | 傾聴・分析・命名（名前呼びかけ対応）        |
 | STT         | `Web Speech API`          | ブラウザ標準音声テキスト化（Chrome専用）    |
 | Animation   | `Framer Motion`           | 植物ステージ間トランジション・音量連動グロー |
+| 決済        | `Stripe`                  | サブスクリプション管理（月額・年額）        |
 | デプロイ    | `Vercel`                  | GitHub連携・自動デプロイ                    |
 
 > **Web Speech API の制約:** Chrome 最新版のみ対応。Safari/Firefox はテキスト入力（「かく」ボタン）にフォールバック。
@@ -71,31 +76,46 @@ Next.js Route Handlers (API層)
 
 ## 3. 機能要件
 
-### 3.1 ログ記録フロー（Day 1〜6）✅
+### 3.1 ログ記録フロー ✅
 
 | 機能                 | 説明                                                                          | 状態 |
 | -------------------- | ----------------------------------------------------------------------------- | ---- |
 | 感情チェックイン     | 1〜10点のスコアを選択（44px タッチターゲット確保）                            | 完了 |
-| 音声入力             | マイクボタン（SVGアイコン）で録音開始。録音中は停止アイコンに切り替わり、土部分が音量に連動して発光 | 完了 |
-| テキスト入力         | 「かく」ボタン（鉛筆+ノートSVGアイコン）でモーダル入力。電車内など声が出せない場面でも記録可能 | 完了 |
-| 複数ログ対応         | 同日2回目以降のログ記録時は選択ポップアップを表示（追加 / 更新 / キャンセル）。ログ数カウント表示あり | 完了 |
-| ポップアップタイミング | ボタン押下時（録音・入力の前）に前回ログ内容とともにポップアップを表示         | 完了 |
-| 案内人の応答         | 属性ラベルを剥がし、事象・感情にフォーカス。全肯定トーンで1つだけ問いを投げる | 完了 |
+| 問いかけ選択         | 話す・書くボタン押下時に4択の問いを表示（強み系・価値観系・感情系各1問＋自由記述）。選ばれた問いをプロンプト欄に反映 | 完了 |
+| 音声入力             | マイクボタンで録音開始。録音中は停止アイコンに切り替わり、土部分が音量に連動して発光 | 完了 |
+| テキスト入力         | 「かく」ボタンでモーダル入力。電車内など声が出せない場面でも記録可能          | 完了 |
+| 複数ログ対応         | 同日2回目以降のログ記録時は選択ポップアップを表示（追加 / 更新 / キャンセル）  | 完了 |
+| 案内人の応答         | 属性ラベルを剥がし、事象・感情にフォーカス。全肯定トーンで1つだけ問いを投げる  | 完了 |
 | 名前呼びかけ         | display_name をプロフィールから取得し、挨拶文と AI プロンプトに反映           | 完了 |
-| 永続化               | 発言・スコア・AI返答をDBへ保存。week_number はタイムゾーン対応で算出          | 完了 |
-| 進捗ランプ           | 7つのランプで今サイクルの記録数を表示。分析後リセット                         | 完了 |
+| 永続化               | 発言・スコア・AI返答・prompt_id をDBへ保存。week_number はタイムゾーン対応で算出 | 完了 |
+| 進捗ランプ           | 3つのランプで今サイクルの記録数を表示。分析後リセット                         | 完了 |
 
-### 3.2 花が咲くフェーズ（Day 7）✅
+**グリーティングメッセージ（問いかけ前）:**
+ログ記録前に以下のいずれかをランダムで表示：
+- 「今夜もここに来てくれましたね。」
+- 「また会えましたね。」
+- 「お帰りなさい。」
 
-> **蓄積の原則:** 7日間のログをGeminiへ投入し「強みの断片」(動詞)を抽出。分析は24時間に1回。結果は花として蓄積され、サイクルを重ねるごとにレベルが上がる。
+### 3.2 花が咲くフェーズ（3日サイクル）✅
+
+> **蓄積の原則:** 3日間の未分析ログをGeminiへ投入し「強みの断片」(動詞)を抽出。分析は24時間に1回。結果は花として蓄積され、サイクルを重ねるごとにレベルが上がる。
 
 **アウトプット構成：**
 
-1. **強みの花の名称** — 独創的な二つ名の命名(動詞として命名する)
+1. **強みの花の名称** — 独創的な二つ名の命名（動詞として命名）
 2. **生存戦略（OS）** — 性質を深く肯定する解説
 3. **逆照射** — 過去の苦しみを「強みの裏返し」として再定義
 4. **輝ける土壌** — その性質が活きる環境条件の提示
 5. **根っこ（root_elements）** — 各ログとの紐付け（ログごとに固有の要約文）
+
+**レベル計算式:**
+
+```
+levelGain = Math.ceil(Math.sqrt(rootEntries.length))
+// 根拠1本 → +1, 2〜3本 → +2, 4〜8本 → +3
+新規作成: level = levelGain
+既存更新: level = current.level + levelGain
+```
 
 **分析の柔軟性：**
 
@@ -103,34 +123,45 @@ Next.js Route Handlers (API層)
 - 複数ログで同じ性質が見られれば統合し、各ログ固有の root 文を生成
 - 無理に件数を増やさない（明確に見えた性質だけ出力）
 
-### 3.4 宝物を見つけるフェーズ（Day 7）✅
+### 3.3 宝物を見つけるフェーズ（3日サイクル）✅
 
-> **蓄積の原則:** 7日間のログをGeminiへ投入し「宝の断片」(名詞)を抽出。分析は24時間に1回。結果は宝物として蓄積され、サイクルを重ねるごとにレベルが上がる。
+> **蓄積の原則:** 3日間の未分析ログをGeminiへ投入し「宝の断片」(名詞)を抽出。分析は24時間に1回。結果は宝物として蓄積され、サイクルを重ねるごとにレベルが上がる。
 
 **アウトプット構成：**
 
-1. **価値観の名称** — 独創的な二つ名の命名(名詞として命名する)
+1. **価値観の名称** — 独創的な二つ名の命名（名詞として命名）
 2. **宝物の解説** — ユーザーが大切にしている価値観
-3. **キーワード** — ログから抽出された宝の断片(キーワード)
-4. **発掘場所** — 各ログとの紐付け（ログごとに固有の要約文）
+3. **キーワード** — ログから抽出された宝の断片
+4. **✦ さらに光輝かせるために** — 価値観が満たされているときの状態（ACT療法の充足感イメージ）
+5. **⚠ 宝を失わないために** — 価値観が脅かされているときのサイン
+6. **発掘場所** — 各ログとの紐付け（ログごとに固有の要約文）
 
-**分析の柔軟性：**
+**レベル計算式:** 強みと同様（`Math.ceil(Math.sqrt(siteEntries.length))`）
 
-- 1ログから複数の断片を抽出可能
-- 複数ログで同じ性質が見られれば統合し、各ログ固有の発掘場所文を生成
-- 無理に件数を増やさない（明確に見えた価値観だけ出力）
+### 3.4 OS命名（タネ）✅
+
+7日間ごとにGeminiがユーザーの根底にある性質（OS）に名前をつける。
+
+**アウトプット構成（seeds_collection に保存）：**
+
+1. **seed_name** — 詩的な二つ名（例：「夜の思考者」）
+2. **os_description** — その性質の肯定的な解説
+3. **logic_reflection** — 過去の苦しみを強みとして再定義した文
+4. **environment_condition** — その性質が最も輝く環境
 
 ### 3.5 強みの庭 ✅
 
 - **花カード一覧:** 蓄積された花をレベル順に表示
 - **カード展開:** クリックで OS・逆照射・土壌・根っこ一覧を表示
 - **根っこクリック:** 根拠となるログ原文（transcript）を逆引き
+- **アクセス制御:** 有料ユーザー・管理者・無料トライアル期間中のみ閲覧可能
 
-### 3.6 価値観の倉庫 ✅
+### 3.6 価値観の宝庫 ✅
 
 - **価値観カード一覧:** 蓄積された価値観をレベル順に表示
-- **カード展開:** クリックで 宝物の解説・キーワード・発掘場所一覧を表示
+- **カード展開:** クリックで宝物の解説・キーワード・さらに光輝かせるために・宝を失わないために・発掘場所一覧を表示
 - **発掘場所クリック:** 根拠となるログ原文（transcript）を逆引き
+- **アクセス制御:** 有料ユーザー・管理者・無料トライアル期間中のみ閲覧可能
 
 ### 3.7 カレンダー機能 ✅
 
@@ -145,18 +176,30 @@ Next.js Route Handlers (API層)
 | 新規登録       | display_name + email + password。登録と同時に user_profiles を upsert |
 | ログイン       | email + password。エラーは日本語メッセージで表示             |
 | セッション管理 | Supabase Cookie ベース（リフレッシュトークン60日）           |
-| ログアウト     | 設定ページから確認ダイアログ付きでログアウト                 |
+| ログアウト     | 設定ページから確認ダイアログ付きでログアウト。localStorage（オンボーディングフラグ）もクリア |
 | メール確認     | ON の場合は auth/callback で user_profiles を upsert         |
 
 ### 3.9 設定ページ ✅
 
 | 機能                 | 説明                                                    |
 | -------------------- | ------------------------------------------------------- |
-| 呼ばれたい名前の変更 | user_profiles.display_name を更新。変更があるときのみ保存ボタン有効 |
+| 呼ばれたい名前の変更 | user_profiles.display_name を更新                       |
 | メールアドレス変更   | Supabase Auth 経由で更新                                |
 | パスワード変更       | 現在のパスワードで再認証後に変更。表示/非表示トグル付き |
 | お問い合わせフォーム | カテゴリ（不具合報告/機能要望/その他）+ 件名 + 本文。contact_messages テーブルに保存 |
+| プランを確認する     | 有料ユーザーには「解約する」ボタン（警告色）を表示。無料ユーザーには表示しない |
 | ログアウト           | 確認ポップアップ表示後にサインアウト → /login へリダイレクト |
+
+### 3.10 サブスクリプション（プラン・お支払い）✅
+
+| 機能                 | 説明                                                          |
+| -------------------- | ------------------------------------------------------------- |
+| 月額プラン           | ¥480/月（税込）。Stripe checkout 経由                        |
+| 年額プラン           | ¥4,800/年（税込、¥400/月相当）。デフォルト選択肢              |
+| 無料分析             | 新規ユーザーは最大3回まで無料で分析可能                       |
+| 無料トライアル期間   | 登録から7日間は強みの庭・価値観の宝庫に無料アクセス可能       |
+| 解約                 | Stripe Customer Portal 経由                                   |
+| Webhook              | `checkout.session.completed` / `customer.subscription.updated` / `customer.subscription.deleted` を処理。RLSバイパスにservice roleキーを使用 |
 
 ---
 
@@ -174,19 +217,20 @@ Next.js Route Handlers (API層)
 | `emotion_score` | int         | 1〜10の感情スコア（サーバー側で整数・範囲検証）|
 | `ai_response`   | text        | 案内人（AI）の返答                             |
 | `is_analyzed`   | boolean     | 分析使用済みフラグ（default: false）           |
+| `prompt_id`     | text        | 選ばれた問いかけのID（例: `s01`, `v03`）。自由記述の場合はnull |
 
-### flower_collection ✅（旧 seeds_collection）
+### flower_collection ✅
 
 | Column                  | Type        | Description                                      |
 | ----------------------- | ----------- | ------------------------------------------------ |
 | `id`                    | uuid        | プライマリキー                                   |
 | `user_id`               | uuid        | auth.users への外部キー（RLS で保護）            |
-| `analyzed_at`           | timestamptz | 分析実施日時                                     |
-| `flower_name`           | text        | AIが命名した二つ名（旧 seed_name）               |
+| `flower_name`           | text        | AIが命名した二つ名                               |
 | `os_description`        | text        | 性質の解説文                                     |
 | `logic_reflection`      | text        | 過去の苦しみの再定義文                           |
 | `environment_condition` | text        | 輝ける土壌の条件                                 |
-| `level`                 | int         | 何サイクル分この強みが抽出されたか（default: 1） |
+| `level`                 | int         | 蓄積レベル（初期値 = `ceil(√根拠数)`）           |
+| `analyzed_at`           | timestamptz | 分析実施日時                                     |
 
 ### root_elements ✅
 
@@ -199,17 +243,58 @@ Next.js Route Handlers (API層)
 | `root`       | text        | そのログでこの強みが現れた場面の要約（50字以内） |
 | `created_at` | timestamptz | 作成日時                                         |
 
+### treasure_collection ✅
+
+| Column              | Type        | Description                                      |
+| ------------------- | ----------- | ------------------------------------------------ |
+| `id`                | uuid        | プライマリキー                                   |
+| `user_id`           | uuid        | auth.users への外部キー（RLS で保護）            |
+| `treasure_name`     | text        | AIが命名した価値観の二つ名                       |
+| `description`       | text        | 価値観の解説文                                   |
+| `keywords`          | text[]      | 抽出されたキーワード配列                         |
+| `fulfillment_state` | text        | 価値観が満たされているときの状態（✦ さらに光輝かせるために） |
+| `threat_signal`     | text        | 価値観が脅かされているときのサイン（⚠ 宝を失わないために） |
+| `level`             | int         | 蓄積レベル（初期値 = `ceil(√根拠数)`）           |
+
+### dig_sites ✅
+
+| Column        | Type        | Description                                      |
+| ------------- | ----------- | ------------------------------------------------ |
+| `id`          | uuid        | プライマリキー                                   |
+| `user_id`     | uuid        | auth.users への外部キー（RLS で保護）            |
+| `treasure_id` | uuid        | treasure_collection への外部キー                 |
+| `log_id`      | uuid        | daily_logs への外部キー                          |
+| `site`        | text        | そのログでこの価値観が現れた場面の要約           |
+| `created_at`  | timestamptz | 作成日時                                         |
+
+### seeds_collection ✅
+
+| Column                  | Type        | Description                                      |
+| ----------------------- | ----------- | ------------------------------------------------ |
+| `id`                    | uuid        | プライマリキー                                   |
+| `user_id`               | uuid        | auth.users への外部キー（RLS で保護）            |
+| `week_number`           | int         | サイクル番号（UNIQUE: user_id + week_number）    |
+| `seed_name`             | text        | AIが命名した「OS（性質）」の二つ名               |
+| `os_description`        | text        | 性質の肯定的な解説                               |
+| `logic_reflection`      | text        | 過去の苦しみを強みとして再定義した文             |
+| `environment_condition` | text        | その性質が最も輝く環境                           |
+| `created_at`            | timestamptz | 作成日時                                         |
+
 ### user_profiles ✅
 
-| Column         | Type        | Description                                              |
-| -------------- | ----------- | -------------------------------------------------------- |
-| `id`           | uuid        | auth.users の ID と紐付く主キー                          |
-| `display_name` | text        | 案内人が呼びかける名前                                   |
-| `timezone`     | text        | ユーザーのタイムゾーン（デフォルト: `Asia/Tokyo`）。ブラウザで自動検出・保存 |
-| `created_at`   | timestamptz | 作成日時                                                 |
-
-> **RLS ポリシー（全テーブル共通）:**
-> `auth.uid() = user_id`（または `id`）で SELECT / INSERT / UPDATE を制限。ユーザー間のデータ完全分離を保証。
+| Column                       | Type        | Description                                              |
+| ---------------------------- | ----------- | -------------------------------------------------------- |
+| `id`                         | uuid        | auth.users の ID と紐付く主キー                          |
+| `display_name`               | text        | 案内人が呼びかける名前                                   |
+| `timezone`                   | text        | ユーザーのタイムゾーン（デフォルト: `Asia/Tokyo`）       |
+| `is_admin`                   | boolean     | 管理者フラグ（default: false）                           |
+| `subscription_status`        | text        | `free` / `active` / `past_due` / `canceled`              |
+| `stripe_customer_id`         | text        | Stripe Customer ID（`cus_...`）                          |
+| `current_period_end`         | timestamptz | サブスクリプションの現在期間終了日                       |
+| `plan_type`                  | text        | `monthly` / `yearly`                                     |
+| `total_analyses_count`       | int         | 累計分析回数（無料回数管理に使用）                       |
+| `total_logs_at_last_analysis`| int         | 直前の分析時点での累計ログ数                             |
+| `created_at`                 | timestamptz | 作成日時                                                 |
 
 ### contact_messages ✅
 
@@ -222,47 +307,128 @@ Next.js Route Handlers (API層)
 | `message`    | text        | 本文                                      |
 | `created_at` | timestamptz | 送信日時                                  |
 
-### マイグレーションファイル一覧
-
-| ファイル                         | 内容                                                 |
-| -------------------------------- | ---------------------------------------------------- |
-| `001_initial_schema.sql`         | daily_logs / seeds_collection + RLS                  |
-| `002_flower_schema.sql`          | flower_collection へのリネーム、root_elements 追加   |
-| `003_contact_messages.sql`       | contact_messages テーブル + RLS                      |
-| `004_user_profiles.sql`          | user_profiles テーブル + RLS                         |
-| `005_user_profiles_timezone.sql` | user_profiles に timezone カラム追加                 |
+> **RLS ポリシー（全テーブル共通）:**
+> `auth.uid() = user_id`（または `id`）で SELECT / INSERT / UPDATE を制限。ユーザー間のデータ完全分離を保証。
+> Stripe Webhook ルートのみ service role キーを使用（RLSをバイパスしてユーザー情報を更新）。
 
 ---
 
-## 5. デザイン＆UX指針
+## 5. AIプロンプト設計
+
+### プロンプト一覧（`lib/prompts.ts`）
+
+| 定数名                   | 用途                    | 呼び出し元          |
+| ------------------------ | ----------------------- | ------------------- |
+| `GUIDE_SYSTEM_PROMPT`    | 傾聴・問いかけ（毎回）  | `/api/guide`        |
+| `FRAGMENT_ANALYZE_PROMPT`| 強み分析                | `/api/analyze`      |
+| `VALUE_ANALYZE_PROMPT`   | 価値観分析              | `/api/analyze`      |
+| `ANALYZE_SYSTEM_PROMPT`  | OS命名（タネ生成）      | `/api/analyze`      |
+
+### 科学的根拠の組み込み
+
+**FRAGMENT_ANALYZE_PROMPT（強み分析）**
+- **VIA強み分類（Peterson & Seligman, 2004）** の6徳目を分析軸として使用
+  - 知恵と知識 / 勇気 / 人間性 / 公正さ / 節制 / 超越性
+
+**ANALYZE_SYSTEM_PROMPT（OS命名）**
+- **Pennebaker（1997）エクスプレッシブライティング理論** による3段階読み解き（感情層・認知層・意味層）
+- **ナラティブセラピー（White & Epston, 1990）** によるオルタナティブストーリー構築
+
+**VALUE_ANALYZE_PROMPT（価値観分析）**
+- **ACT価値観リスト（Hayes et al., 2006）** の6領域を分析軸として使用
+  - 関係性 / 自己成長 / 社会参加 / 健康と安定 / 精神性 / 仕事と達成
+
+**GUIDE_SYSTEM_PROMPT（傾聴）**
+- **Rogers（1957）来談者中心療法** の3原則（無条件の肯定的配慮・共感的理解・自己一致）
+- **Seligman et al.（2005）ポジティブ心理学** による問いの設計方針（3 Good Things等）
+
+### ジャーナルプロンプト（`lib/messages.ts`）
+
+ログ記録前に4択の問いを表示する。毎回ランダムに選択。
+
+| カテゴリ      | 問い数 | 根拠理論                                          |
+| ------------- | ------ | ------------------------------------------------- |
+| `strength`    | 10問   | VIA強み理論（Peterson & Seligman, 2004）          |
+| `value`       | 10問   | ACT価値観リスト（Hayes et al., 2006）             |
+| `emotion`     | 10問   | CBT・エクスプレッシブライティング（Pennebaker, 1997）|
+| `free`        | 固定1問| 自由記述（常に表示）                              |
+
+選ばれた問いの `id`（例: `s01`, `v03`, `e07`）は `daily_logs.prompt_id` に保存し、AI分析時に「この問いに答えたエピソード」として活用する。
+
+---
+
+## 6. サブスクリプション設計
+
+### プラン構成
+
+| プラン   | 価格           | Stripe Price ID              |
+| -------- | -------------- | ---------------------------- |
+| 月額     | ¥480/月（税込）| `STRIPE_PRICE_ID_MONTHLY`    |
+| 年額     | ¥4,800/年（税込）| `STRIPE_PRICE_ID_YEARLY`   |
+
+### 分析回数制限
+
+| 状態                   | 分析可能条件                    |
+| ---------------------- | ------------------------------- |
+| 無料（分析0〜2回目）   | `ANALYSIS_THRESHOLDS = [2, 2, 3]` 件の新規ログ |
+| 無料（3回消費済み）    | 分析不可（subscription_required） |
+| 有料（active）         | 3件の新規ログごとに分析可能     |
+| 管理者                 | 常に分析可能                    |
+
+### アクセス制御
+
+```
+hasAccessWithFreeTrial(profile):
+  is_admin → true
+  subscription_status === "active" → true
+  created_at + 7日 > 現在 → true（無料トライアル期間中）
+  それ以外 → false → /upgrade へリダイレクト
+```
+
+### Stripe Webhook フロー
+
+```
+Stripe → POST /api/stripe/webhook
+  ↓ 署名検証（STRIPE_WEBHOOK_SECRET）
+  ↓ middleware の認証をスキップ（/api/stripe/webhook は認証除外）
+  ↓ createAdminClient()（service role キー、RLSバイパス）
+  ↓ user_profiles を stripe_customer_id で照合・更新
+    - subscription_status
+    - current_period_end
+    - plan_type（monthly / yearly）
+```
+
+### 環境変数（Stripe関連）
+
+| 変数名                    | 説明                               |
+| ------------------------- | ---------------------------------- |
+| `STRIPE_SECRET_KEY`       | Stripe シークレットキー（`sk_live_...`）|
+| `STRIPE_PRICE_ID_MONTHLY` | 月額プライスID                     |
+| `STRIPE_PRICE_ID_YEARLY`  | 年額プライスID                     |
+| `STRIPE_WEBHOOK_SECRET`   | Webhook 署名シークレット（`whsec_...`）|
+
+---
+
+## 7. デザイン＆UX指針
 
 ### レイアウト原則
 
-- **モバイルファースト:** `px-4 sm:px-6` パターンで全ページ統一。水平余白の調整は1箇所で完結
+- **モバイルファースト:** `px-4 sm:px-6` パターンで全ページ統一
 - **コンテナ幅:** `w-full max-w-{size} mx-auto` パターンを全ページで使用
 - **スマートフォン対応:** タッチターゲット最低 44px（`h-11`）。iOS ホームバー考慮（`bottom-8`）
 - **ブレークポイント:** `sm:` (640px) に統一
 
 ### ホーム画面レイアウト（上から順）
 
-1. タイトル「夜の温室」+ 設定ボタン（左端・歯車SVGアイコン、`w-12 h-12`）
-2. ナビゲーションボタン行（カレンダー / 価値観の倉庫〈ダイヤモンドSVG〉/ 強みの庭〈5枚花びらSVG〉、各 `w-12 h-12`）
-3. 進捗ランプ（7個。サイクル内ログ数をカウント）
+1. タイトル「bloomine」+ 設定ボタン（左端・歯車SVGアイコン）
+2. ナビゲーションボタン行（カレンダー / 価値観の宝庫 / 強みの庭）
+3. 進捗ランプ（3個。サイクル内ログ数をカウント）
 4. AI メッセージボックス（コンパクト: `min-h-[72px] p-4`）
 5. 植物アニメーション（成長ステージ）
-6. Day7 分析ボタン（条件付き表示）
+6. 分析ボタン（3日分のログ蓄積後に表示）
 7. 感情スコア選択（1〜10）
 8. マイクボタン + かくボタン（横並び。録音中はかくボタンを非表示）
 9. 発話テキスト（録音後に表示）
-
-### ナビゲーションアイコン
-
-| ボタン       | アイコン                                              | サイズ    |
-| ------------ | ----------------------------------------------------- | --------- |
-| 設定         | 歯車SVG（stroke）                                     | 22×22px   |
-| カレンダー   | カレンダーSVG（rect + lines）                         | 22×22px   |
-| 価値観の倉庫 | ダイヤモンドSVG（多角形 path）                        | 22×22px   |
-| 強みの庭     | 花びら5枚SVG（5つのcircle重ね + 中心filled circle）   | 22×22px   |
 
 ### カラーパレット
 
@@ -272,13 +438,14 @@ Next.js Route Handlers (API層)
 | メインテキスト       | `slate-200`                        |
 | アクセント（緑）     | `emerald-400` (#34d399)            |
 | 葉・茎               | `emerald-400` / `emerald-950` fill |
-| 花びら（7日目）      | `rose-300` (#fda4af) ストローク    |
+| 花びら（分析後）     | `rose-300` (#fda4af) ストローク    |
 | 花の中心             | `rose-400` (#fb7185)               |
 | 土グロー             | `emerald-300` (#6ee7b7)            |
+| 警告（解約ボタン等） | `red-400` / `red-800`              |
 
 ---
 
-## 6. アニメーション仕様
+## 8. アニメーション仕様
 
 ### 植物成長ステージ（`components/PlantAnimation.tsx`）
 
@@ -286,38 +453,25 @@ Next.js Route Handlers (API層)
 | --------------- | ---------- | -------------------------------------- |
 | 0               | `soil`     | 盛り上がった土のみ                     |
 | 1               | `sprout`   | 短い茎 + 丸い芽                        |
-| 2–3             | `seedling` | 茎 + 双葉 + 小さな蕾                  |
-| 4–5             | `grown`    | 茎 + 4枚の葉 + 蕾                     |
-| 6–7             | `bud`      | 茎 + 4枚の葉 + 萼付き大きな蕾         |
+| 2               | `seedling` | 茎 + 双葉 + 小さな蕾                  |
 | 分析後          | `flower`   | 茎 + 葉 + ローズ系6枚花びら + 中心    |
 
 **実装詳細:**
 - SVG ミニマル線画（viewBox: `0 0 120 160`）
 - Framer Motion `AnimatePresence mode="wait"` でステージ間をフェード遷移（duration: 0.55s）
-- カラーは `C`（植物全般）と `FC`（花びら専用・ローズ系）の2定数で管理
 
 ### 音量連動グロー（録音中）
 
 - Web Audio API（`AudioContext` + `AnalyserNode`）でマイク音量をリアルタイム計測
 - `useMotionValue` → `useSpring`（damping: 18, stiffness: 200）でスムーズに平滑化
 - RAF ループは~10fps（100msインターバル）にスロットルしてCPU負荷を抑制
-- 録音停止時にアナライザー参照を null クリアしてループを自己終了させる（RAF キャンセル競合を防止）
+- 録音停止時にアナライザー参照を null クリアしてループを自己終了
 - `useTransform` で opacity に変換: 入力 `[0, 0.2]` → 出力 `[0, 0.88]`
-- 土の背後に emerald-300 グロー楕円を描画。ぼかしには SVG ネイティブの `<feGaussianBlur>`（iOS Safari 対応）
-
-**iOS Safari 対応:**
-CSS `filter: blur()` はiOS SafariのSVG要素で動作しないため、SVG `<defs>` 内の `<filter>` + `<feGaussianBlur>` を使用。
-
-**調整パラメータ（`PlantAnimation.tsx`）:**
-```
-const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
-// [0, 0.2]: 入力レンジ（小さいほど敏感）
-// [0, 0.88]: 出力レンジ（大きいほど明るい）
-```
+- 土の背後に emerald-300 グロー楕円。SVG `<feGaussianBlur>` を使用（iOS Safari 対応）
 
 ---
 
-## 7. 非機能要件
+## 9. 非機能要件
 
 ### 認証・セキュリティ
 
@@ -325,22 +479,37 @@ const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
 | ------------------ | ---------------------------------------- | ------------------------------------- |
 | 認証               | Supabase Auth（email + password）        | 新規登録・ログイン。Cookie セッション |
 | API認証            | 全書き込みAPIで認証チェック。未認証は401 | `supabase.auth.getUser()` + 早期return |
+| Webhook認証除外    | `/api/stripe/webhook` は middleware の認証対象外 | Stripe 署名検証で代替 |
 | データ分離         | ユーザー間のデータ完全分離               | RLS: `auth.uid() = user_id`           |
-| 入力バリデーション | log_id はUUID形式チェック。emotion_score は整数1〜10チェック。transcript は10,000文字上限 | サーバー側で検証 |
+| 管理者操作         | Webhook等でのRLSバイパス                 | `createAdminClient()`（service role key）|
+| 入力バリデーション | log_id UUID形式・emotion_score 整数1〜10・transcript 10,000文字上限 | サーバー側で検証 |
 | 音声プライバシー   | 音声データはサーバーに送信・保存しない   | Web Speech API はブラウザ内処理       |
-| APIキー保護        | Gemini APIキーをクライアントに露出しない | Route Handler 経由のみ                |
+| APIキー保護        | Gemini/Stripe APIキーをクライアントに露出しない | Route Handler 経由のみ           |
 | レート制限         | analyze APIは24時間に1回まで             | 最新 `is_analyzed=true` ログの `updated_at` で経過時間チェック |
+| ログアウト         | localStorage（オンボーディングフラグ）もクリア | `localStorage.removeItem()` |
 
-### 定数管理
-
-`lib/constants.ts` に一元管理:
+### 定数管理（`lib/constants.ts`）
 
 ```ts
-DAY_START_HOUR = 5        // 1日の切り替わり時刻（午前5時）
-EMOTION_SCORE_MIN = 1     // 感情スコア最小値
-EMOTION_SCORE_MAX = 10    // 感情スコア最大値
-TRANSCRIPT_MAX = 10_000   // transcript 最大文字数
+DAY_START_HOUR = 5          // 1日の切り替わり時刻（午前5時）
+EMOTION_SCORE_MIN = 1       // 感情スコア最小値
+EMOTION_SCORE_MAX = 10      // 感情スコア最大値
+TRANSCRIPT_MAX = 10_000     // transcript 最大文字数
+RATE_LIMIT_MS = 24時間(ms)  // 分析レート制限
+FREE_TRIAL_DAYS = 7         // 無料トライアル期間（日数）
 ```
+
+### パフォーマンス
+
+- **N+1解消:** 分析処理で既存flower/treasureのレベルを一括SELECT（`.in()`）し、root_elements/dig_sitesをバッチINSERTに変更（最大40クエリ → 数クエリ）
+- **並列実行:** Gemini分析3種（強み・価値観・OS命名）を `Promise.all` で並列実行
+- **並列取得:** 既存花・価値観の事前取得も `Promise.all` で並列実行
+
+### エラーハンドリング
+
+- AIレスポンスのJSONパースは try/catch で保護。パース失敗時は 422 を返す
+- タネ（OS命名）のパース失敗は致命的でないため処理を継続
+- Stripe checkout URL未取得時はアラートでエラー内容を表示
 
 ### コスト管理
 
@@ -349,6 +518,7 @@ TRANSCRIPT_MAX = 10_000   // transcript 最大文字数
 | Supabase         | Free（500MB DB）  | ¥0                             |
 | Vercel           | Hobby（個人利用） | ¥0                             |
 | Gemini 2.5 Flash | 従量課金          | 数十ユーザーで ¥300〜¥500 程度 |
+| Stripe           | 本番              | 決済手数料 3.6% + ¥40/件       |
 
 ### 対応環境
 
@@ -361,9 +531,8 @@ TRANSCRIPT_MAX = 10_000   // transcript 最大文字数
 
 - `daily_logs.created_at` は UTC で保存（Supabase デフォルト）
 - ブラウザで `Intl.DateTimeFormat().resolvedOptions().timeZone` を検出し `user_profiles.timezone` に自動保存
-- API 側（`/api/logs`, `/api/status`）で `lib/date-utils.ts` の `calcWeekNumber()` を使い、ユーザーの暦日ベースで week_number を算出
-- `calcWeekNumber` は `now` パラメータでテスタブル設計。負値防止で `Math.max(1, ...)` を適用
-- JST深夜0〜5時（`DAY_START_HOUR` 前）のログは前日扱い（`appDateStr` による5時シフト）
+- API 側で `lib/date-utils.ts` の `calcWeekNumber()` を使い、ユーザーの暦日ベースで week_number を算出
+- JST深夜0〜5時（`DAY_START_HOUR` 前）のログは前日扱い
 
 ### デプロイ・CI/CD
 
@@ -379,43 +548,51 @@ TRANSCRIPT_MAX = 10_000   // transcript 最大文字数
 
 ---
 
-## 8. ファイル構成
+## 10. ファイル構成
 
 ```
 app/
-  page.tsx                  # メイン画面（ログ記録・植物・感情スコア・マイク・かく）
-  login/page.tsx            # ログイン・新規登録（email + password）
-  settings/page.tsx         # 設定ページ（名前・メール・パスワード・お問い合わせ・ログアウト）
-  calendar/page.tsx         # カレンダー（過去ログの日付ブラウズ。60秒キャッシュ）
-  seeds/page.tsx            # 強みの庭（花カード一覧・詳細展開）
-  treasures/page.tsx        # 価値観の倉庫（価値観カード一覧・詳細展開）
-  auth/callback/route.ts    # メール確認後のコールバック（user_profiles upsert）
+  page.tsx                        # メイン画面（ログ記録・植物・感情スコア・マイク・かく）
+  login/page.tsx                  # ログイン・新規登録（email + password）
+  settings/page.tsx               # 設定ページ（名前・メール・パスワード・お問い合わせ・ログアウト）
+  upgrade/page.tsx                # プラン確認・サブスクリプション購入（月額/年額切り替え）
+  calendar/page.tsx               # カレンダー（過去ログの日付ブラウズ。60秒キャッシュ）
+  seeds/page.tsx                  # 強みの庭（花カード一覧・詳細展開）
+  treasures/page.tsx              # 価値観の宝庫（価値観カード一覧・詳細展開）
+  auth/callback/route.ts          # メール確認後のコールバック（user_profiles upsert）
   api/
-    logs/route.ts           # ログ保存 POST / 更新 PUT（認証必須・バリデーション強化）
-    status/route.ts         # 週次ステータス取得（today_log_id / transcript / count含む）
-    analyze/route.ts        # 7日分析実行（Gemini。24時間レート制限）
-    calendar/route.ts       # 月ごとのログ日付一覧
-    calendar/[date]/route.ts# 指定日のログ一覧
-    flowers/route.ts        # 花コレクション取得
-    contact/route.ts        # お問い合わせ送信
+    logs/route.ts                 # ログ保存 POST / 更新 PUT（認証必須・prompt_id対応）
+    status/route.ts               # 週次ステータス取得
+    analyze/route.ts              # 分析実行（Gemini並列。24時間レート制限。N+1解消済み）
+    calendar/route.ts             # 月ごとのログ日付一覧
+    calendar/[date]/route.ts      # 指定日のログ一覧
+    flowers/route.ts              # 花コレクション取得
+    treasures/route.ts            # 価値観コレクション取得
+    contact/route.ts              # お問い合わせ送信
+    stripe/
+      create-checkout/route.ts    # Stripe Checkout セッション作成
+      create-portal/route.ts      # Stripe Customer Portal セッション作成
+      webhook/route.ts            # Stripe Webhook 処理（署名検証・DB更新）
 
 components/
-  PlantAnimation.tsx        # 植物SVGアニメーション（6ステージ + 音量グロー。iOS対応blur）
-  Onboarding.tsx            # オンボーディング（話す・かく・カレンダー等の説明）
+  PlantAnimation.tsx              # 植物SVGアニメーション（成長ステージ + 音量グロー）
+  Onboarding.tsx                  # オンボーディング（初回訪問時の機能説明）
 
 hooks/
-  useVolumeTracker.ts       # Web Audio API音量トラッキング + Framer Motion smoothVolume
-  useSpeechRecognition.ts   # Web Speech API初期化・transcript管理
+  useVolumeTracker.ts             # Web Audio API音量トラッキング
+  useSpeechRecognition.ts         # Web Speech API初期化・transcript管理
 
 lib/
-  supabase.ts               # ブラウザ用 Supabase クライアント
-  supabase-server.ts        # サーバー用 Supabase クライアント（@supabase/ssr）
-  prompts.ts                # AI プロンプト定数（GUIDE_SYSTEM_PROMPT は displayName 引数あり）
-  date-utils.ts             # タイムゾーン対応日付計算（calcWeekNumber / appDateStr / getMonthUTCRange等）
-  constants.ts              # 共通定数（DAY_START_HOUR / EMOTION_SCORE_MIN/MAX / TRANSCRIPT_MAX）
-  messages.ts               # 案内人メッセージ（getQuestion / getResponse）
+  supabase.ts                     # ブラウザ用 Supabase クライアント
+  supabase-server.ts              # サーバー用クライアント（createClient / createAdminClient）
+  stripe.ts                       # Stripe クライアント初期化
+  prompts.ts                      # AI プロンプト定数（4種。科学的根拠組み込み済み）
+  messages.ts                     # 案内人メッセージ・ジャーナルプロンプト30問
+  date-utils.ts                   # タイムゾーン対応日付計算
+  constants.ts                    # 共通定数（RATE_LIMIT_MS / FREE_TRIAL_DAYS 含む）
+  subscription.ts                 # 分析可否チェック・アクセス権チェック（hasAccessWithFreeTrial）
 
-middleware.ts               # 認証ガード（未ログイン → /login リダイレクト）
+middleware.ts                     # 認証ガード（/api/stripe/webhook は除外）
 
 supabase/migrations/
   001_initial_schema.sql
@@ -427,100 +604,108 @@ supabase/migrations/
 
 ---
 
-## 9. 開発チェックリスト
+## 11. 開発チェックリスト
 
 ### Phase 0 — 基盤整備 ✅
 
 - [x] Next.js プロジェクト作成（App Router）
 - [x] Gemini API 接続確認（gemini-2.5-flash）
 - [x] GitHub 連携
-- [x] Supabase プロジェクト作成
-- [x] Supabase Auth 設定
-- [x] DB マイグレーション実行（001〜005）
-- [x] `.env.local` に環境変数追加
+- [x] Supabase プロジェクト作成・Auth 設定
+- [x] DB マイグレーション実行
 - [x] Vercel デプロイ設定・本番稼働
+- [x] ドメイン取得・設定（bloomines.com）
 
 ### Phase 1 — ログ記録フロー ✅
 
-- [x] 感情スコア UI 実装（1〜10、タッチターゲット 44px）
+- [x] 感情スコア UI 実装（1〜10）
 - [x] Web Speech API 統合（マイクボタン/停止ボタン）
+- [x] テキスト入力「かく」ボタン
 - [x] 案内人 AI 応答実装（Gemini Route Handler）
 - [x] ログ永続化（Supabase INSERT）
-- [x] middleware.ts による認証ガード
-- [x] DEV_MOCK_AI モード実装（API節約）
+- [x] middleware による認証ガード
+- [x] DEV_MOCK_AI モード実装
 
 ### Phase 2 — 花が咲くフェーズ ✅
 
-- [x] サイクル判定ロジック（is_analyzed フラグ確認・分析済みなら409）
-- [x] 7日間ログ取得 → Gemini 統合分析（FRAGMENT_ANALYZE_PROMPT）
-- [x] 柔軟な断片数（統合・複数可）、ログごとに固有の root 文を生成
+- [x] 3日サイクル判定ロジック
+- [x] Gemini 統合分析（FRAGMENT_ANALYZE_PROMPT）
 - [x] flower_collection / root_elements への保存
-- [x] 分析後ランプリセット（クライアント側カウント管理）
+- [x] レベル計算（`Math.ceil(Math.sqrt(n))`）
+- [x] N+1クエリ解消（一括SELECT・バッチINSERT）
+- [x] JSONパース例外処理
 
-### Phase 3 — 強みの庭 ✅
+### Phase 3 — 価値観・OS命名 ✅
 
-- [x] 花コレクション一覧 UI（レベル順カード表示）
-- [x] カードクリック → OS・逆照射・土壌・根っこ一覧展開
-- [x] 根っこクリック → 元ログ transcript 逆引き
+- [x] VALUE_ANALYZE_PROMPT（ACT価値観リスト組み込み）
+- [x] treasure_collection / dig_sites への保存
+- [x] fulfillment_state / threat_signal フィールド追加
+- [x] ANALYZE_SYSTEM_PROMPT（OS命名・seeds_collection保存）
+- [x] seeds_collection テーブル作成
 
-### Phase 4 — アカウント・UX強化 ✅
+### Phase 4 — 強みの庭・価値観の宝庫 ✅
 
-- [x] email + password による新規登録 & ログイン
-- [x] 新規登録時に user_profiles へ upsert（即時セッション / メール確認 両対応）
-- [x] ログアウト（設定ページから確認ダイアログ付き）
-- [x] 設定ページ（名前・メール・パスワード変更。変更検知で保存ボタン制御）
-- [x] お問い合わせフォーム（カテゴリ + 件名 + 本文）
-- [x] スマホ対応（モバイルファースト・全ページレスポンシブ）
-- [x] 植物アニメーション（6ステージ成長。Framer Motion SVG）
-- [x] 音量連動グロー（Web Audio API + MotionValue。土部分がエメラルド色に発光）
-- [x] パーソナライズ（名前呼びかけ: UI + AI プロンプト両方）
-- [x] タイムゾーン対応（ブラウザ自動検出・保存。week_number 算出に使用）
+- [x] 花コレクション一覧UI（レベル順・詳細展開）
+- [x] 価値観コレクション一覧UI（fulfillment_state/threat_signal表示）
+- [x] アクセス制御（hasAccessWithFreeTrial）
 
-### Phase 5 — 品質・UX強化 ✅
+### Phase 5 — アカウント・UX強化 ✅
 
-- [x] カレンダー機能（過去ログの日付ブラウズ。60秒TTLキャッシュ）
-- [x] テキスト入力「かく」ボタン（Safari/Firefox フォールバック兼用）
-- [x] オンボーディング（初回訪問時の機能説明ツアー）
-- [x] 複数ログ対応（同日2回目以降: 追加/更新ポップアップ）
-- [x] SVGアイコン化（マイク・鉛筆+ノート・停止・ナビゲーション各種）
-- [x] iOS Safari 音量グロー修正（`<feGaussianBlur>` 対応）
-- [x] セキュリティ強化（POST認証必須・UUID検証・emotionScore検証・analyze レート制限）
-- [x] RAFスロットル（~10fps）・cycleLogCount負値防止・constants.ts一元管理
-- [x] カスタムフック分離（`useVolumeTracker`・`useSpeechRecognition`）
+- [x] 新規登録・ログイン（email + password）
+- [x] 設定ページ（名前・メール・パスワード・お問い合わせ）
+- [x] オンボーディング（初回訪問時。ログアウト時にlocalStorageクリア）
+- [x] 植物アニメーション（Framer Motion SVG）
+- [x] 音量連動グロー（iOS Safari対応）
+- [x] タイムゾーン対応
+- [x] カレンダー機能
+- [x] 科学的根拠のプロンプト組み込み（VIA・ACT・CBT・Rogers・Seligman）
+- [x] ジャーナルプロンプト30問（問いかけ選択UI）
+
+### Phase 6 — サブスクリプション ✅
+
+- [x] Stripe 統合（月額¥480・年額¥4,800）
+- [x] Stripe Checkout・Customer Portal
+- [x] Webhook処理（署名検証・service roleキーでDB更新）
+- [x] middleware での Webhook エンドポイント認証除外
+- [x] plan_type（monthly/yearly）の保存・表示
+- [x] 設定ページの「プランを確認する」（有料ユーザーのみ「解約する」表示）
+- [x] 無料トライアル期間（7日間）アクセス制御
 
 ### 今後の候補
 
 - [ ] プッシュ通知（毎晩のリマインダー）
-- [ ] アニメーション強化（Framer Motion）
+- [ ] ジャーナルプロンプトの選択履歴をAI分析に活用
+- [ ] seeds_collection（OS命名）の閲覧UI
 
 ---
 
-## 10. メモ・決定事項ログ
+## 12. メモ・決定事項ログ
 
 | 日付       | 内容                                                                                    |
 | ---------- | --------------------------------------------------------------------------------------- |
-| 2026-03-01 | Gemini モデルを `gemini-1.5-pro` → `gemini-2.5-flash` に変更（コスト削減 + API互換性）  |
-| 2026-03-02 | seeds_collection → flower_collection にリネーム。week_number 削除、level カラム追加     |
+| 2026-03-01 | Gemini モデルを `gemini-1.5-pro` → `gemini-2.5-flash` に変更（コスト削減）             |
+| 2026-03-02 | seeds_collection → flower_collection にリネーム。level カラム追加                      |
 | 2026-03-03 | root_elements テーブル追加（花とログを多対多で紐付け）                                  |
-| 2026-03-03 | 分析は「1ログ1断片」の強制をやめ、統合・複数断片に対応。各ログ固有の root 文を生成      |
-| 2026-03-03 | ランプ表示をクライアント側カウント管理に変更（分析後リセット対応）                      |
-| 2026-03-04 | 認証を Magic Link → email + password に変更。user_profiles 登録フロー追加               |
-| 2026-03-04 | 設定ページ新設（/settings）。変更検知・確認ダイアログ・お問い合わせフォーム実装         |
-| 2026-03-05 | スマホ対応（モバイルファーストのレスポンシブ実装）。感情スコアボタンタッチターゲット改善 |
-| 2026-03-06 | 植物成長アニメーション実装（framer-motion + SVG。6ステージ）                            |
-| 2026-03-06 | 花びらをローズ系カラーに変更。音量連動グロー（Web Audio API + SoilGlow コンポーネント） |
-| 2026-03-07 | タイムゾーン対応（lib/date-utils.ts）。JST深夜ログのズレ修正                            |
-| 2026-03-07 | パーソナライズ実装（名前呼びかけ: デフォルト挨拶文 + Gemini プロンプト両方）            |
-| 2026-03-07 | user_profiles.timezone をブラウザで自動検出・保存するよう実装                           |
-| 2026-03-08 | 「やり直す」ボタンを廃止。マイク + かくボタン常時表示に変更（SVGアイコン化）            |
-| 2026-03-08 | 「かく」ボタン追加（テキスト入力モーダル。Safari/Firefox フォールバック兼用）           |
-| 2026-03-08 | 同日複数ログ対応: 2回目以降はポップアップで追加/更新を選択。ログカウントを表示          |
-| 2026-03-08 | ポップアップのタイミングを録音/入力の前に変更（ボタン押下 → ポップアップ → 録音/入力）  |
-| 2026-03-08 | ナビゲーションアイコン変更（強みの庭: 5枚花びらSVG、価値観: ダイヤモンドSVG）+ 大型化  |
-| 2026-03-08 | iOS Safari 音量グローの blur を CSS → SVG `<feGaussianBlur>` に変更                    |
-| 2026-03-08 | RAFループ停止バグ修正: analyserRef を null クリアしてループを自己終了させる方式に変更   |
-| 2026-03-08 | セキュリティ強化: POST未認証401返却・log_id UUID検証・emotionScore整数範囲検証          |
-| 2026-03-08 | analyze APIにレート制限追加（24時間1回。残り時間を分単位で返す）                        |
-| 2026-03-08 | lib/constants.ts 新設。DAY_START_HOUR / EMOTION_SCORE_MIN/MAX / TRANSCRIPT_MAX を一元管理 |
-| 2026-03-08 | カスタムフック分離: hooks/useVolumeTracker.ts・hooks/useSpeechRecognition.ts 新設       |
-| 2026-03-08 | calcWeekNumber に now パラメータ追加（テスタビリティ向上）。Math.max(1, ...) で負値防止 |
+| 2026-03-03 | 分析は「1ログ1断片」の強制をやめ、統合・複数断片に対応                                  |
+| 2026-03-04 | 認証を Magic Link → email + password に変更                                            |
+| 2026-03-04 | 設定ページ新設（/settings）                                                             |
+| 2026-03-05 | スマホ対応（モバイルファーストのレスポンシブ実装）                                      |
+| 2026-03-06 | 植物成長アニメーション実装（framer-motion + SVG）                                       |
+| 2026-03-07 | タイムゾーン対応（lib/date-utils.ts）                                                   |
+| 2026-03-08 | 「かく」ボタン追加・複数ログ対応・カスタムフック分離・constants.ts新設                  |
+| 2026-03-08 | iOS Safari 音量グローの blur を SVG `<feGaussianBlur>` に変更                          |
+| 2026-03-08 | セキュリティ強化（POST未認証401返却・UUID検証・emotionScore検証・レート制限）            |
+| 2026-03-10 | Stripe サブスクリプション統合（月額¥480・年額¥4,800）                                  |
+| 2026-03-10 | Stripe Webhook の 401 問題解決（middleware で /api/stripe/webhook を認証除外）          |
+| 2026-03-10 | Webhook の Supabase 更新失敗問題解決（service role キーで RLS をバイパス）              |
+| 2026-03-10 | Stripe 本番環境へ移行（テスト環境 → 本番環境）                                         |
+| 2026-03-12 | 価値観に fulfillment_state（✦ さらに光輝かせるために）と threat_signal（⚠ 宝を失わないために）を追加 |
+| 2026-03-12 | レベル計算を「+1固定」→「`Math.ceil(√根拠数)`」に変更（根拠が多いほど多くLvが上がる）  |
+| 2026-03-12 | 分析サイクルを7日 → 3日に短縮                                                          |
+| 2026-03-12 | ジャーナルプロンプト30問実装（strength/value/emotion 各10問）。問いかけ選択UIを追加    |
+| 2026-03-12 | AIプロンプトに科学的根拠を組み込み（VIA・ACT・Pennebaker・Rogers・Seligman）            |
+| 2026-03-12 | seeds_collection テーブル作成・OS命名（ANALYZE_SYSTEM_PROMPT）実装                    |
+| 2026-03-15 | コードレビューに基づく品質改善（N+1解消・JSONパース例外処理・アクセス権チェック統合・定数集約） |
+| 2026-03-15 | ログアウト時にlocalStorage（オンボーディングフラグ）をクリアするよう修正                |
+| 2026-03-15 | daily_logs に prompt_id カラム追加（選ばれた問いかけIDを保存）                         |
+| 2026-03-15 | プロジェクト名を「夜の温室 (Night Greenhouse)」→「bloomine」に変更                     |
