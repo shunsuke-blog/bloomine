@@ -10,6 +10,7 @@ type ProfileStatus = {
   is_admin: boolean;
   total_analyses_count: number;
   created_at: string;
+  plan_type: string | null;
 };
 
 function UpgradeContent() {
@@ -29,7 +30,7 @@ function UpgradeContent() {
       if (!user) { router.push("/login"); return; }
       const { data } = await supabase
         .from("user_profiles")
-        .select("subscription_status, current_period_end, is_admin, total_analyses_count, created_at")
+        .select("subscription_status, current_period_end, is_admin, total_analyses_count, created_at, plan_type")
         .eq("id", user.id)
         .maybeSingle();
       setProfile(data);
@@ -104,7 +105,9 @@ function UpgradeContent() {
           <div className="space-y-1">
             <p className="text-xs text-slate-500">現在のプラン</p>
             {isActive ? (
-              <p className="text-emerald-300 text-sm">月額プラン（¥450/月）</p>
+              <p className="text-emerald-300 text-sm">
+                {profile.plan_type === "yearly" ? "年額プラン（¥4,800/年）" : "月額プラン（¥480/月）"}
+              </p>
             ) : (
               <p className="text-amber-300 text-sm">無料プラン</p>
             )}

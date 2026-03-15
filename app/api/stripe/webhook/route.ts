@@ -67,15 +67,17 @@ export async function POST(req: NextRequest) {
         session.subscription as string
       );
 
-      console.log("[webhook] customerId:", customerId, "status:", subscription.status);
-      const { error: updateError, count } = await supabase
+      const priceId = subscription.items.data[0]?.price?.id ?? "";
+      const planType = priceId === process.env.STRIPE_PRICE_ID_YEARLY ? "yearly" : "monthly";
+
+      await supabase
         .from("user_profiles")
         .update({
           subscription_status: toAppStatus(subscription.status),
           current_period_end: periodEndISO(subscription),
+          plan_type: planType,
         })
         .eq("stripe_customer_id", customerId);
-      console.log("[webhook] update result - error:", updateError, "count:", count);
       break;
     }
 
