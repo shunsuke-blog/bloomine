@@ -152,35 +152,38 @@ function UpgradeContent() {
       {!isActive && !success && (
         <div className="space-y-4">
           {/* プラン切り替えトグル */}
-          <div className="flex rounded-xl overflow-hidden border border-slate-700">
+          <div className="flex gap-2">
             <button
               onClick={() => setSelectedPlan("monthly")}
-              className={`flex-1 py-2 text-xs transition-colors ${selectedPlan === "monthly" ? "bg-emerald-800/60 text-emerald-200" : "text-slate-500 hover:text-slate-300"}`}
+              className={`flex-1 py-2 text-xs rounded-xl border transition-colors ${selectedPlan === "monthly" ? "bg-emerald-800/60 border-emerald-600/50 text-emerald-200" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}
             >
               月額
             </button>
-            <button
-              onClick={() => setSelectedPlan("yearly")}
-              className={`relative flex-1 py-2 text-xs transition-colors ${selectedPlan === "yearly" ? "bg-emerald-800/60 text-emerald-200" : "text-slate-500 hover:text-slate-300"}`}
-            >
-              年額
-              <span className="absolute top-0.5 right-1.5 text-amber-400 text-[10px]">お得</span>
-            </button>
+            <div className="relative flex-1">
+              <button
+                onClick={() => setSelectedPlan("yearly")}
+                className={`w-full py-2 text-xs rounded-xl border transition-colors ${selectedPlan === "yearly" ? "bg-emerald-800/60 border-emerald-600/50 text-emerald-200" : "border-slate-700 text-slate-500 hover:text-slate-300"}`}
+              >
+                年額
+              </button>
+              <span className="absolute -top-2.5 -right-1.5 bg-amber-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">お得</span>
+            </div>
           </div>
 
           <div className="p-5 bg-slate-900/40 border border-emerald-900/30 rounded-2xl space-y-4">
-            <div className="flex items-baseline justify-between">
-              <p className="text-emerald-300 text-base">
+            <div className="flex items-start justify-between">
+              <p className="text-emerald-300 text-base pt-0.5">
                 {selectedPlan === "monthly" ? "月額プラン" : "年額プラン"}
               </p>
-              {selectedPlan === "monthly" ? (
-                <p className="text-emerald-400 text-lg font-light">¥480 <span className="text-xs text-slate-500">/ 月</span></p>
-              ) : (
-                <div className="text-right">
-                  <p className="text-emerald-400 text-lg font-light">¥4,800 <span className="text-xs text-slate-500">/ 年</span></p>
-                  <p className="text-xs text-amber-400">¥400/月相当</p>
-                </div>
-              )}
+              <div className="text-right h-10 flex flex-col justify-center">
+                <p className="text-emerald-400 text-lg font-light">
+                  {selectedPlan === "monthly" ? "¥480" : "¥4,800"}
+                  <span className="text-xs text-slate-500"> {selectedPlan === "monthly" ? "/ 月" : "/ 年"}</span>
+                </p>
+                <p className={`text-xs text-amber-400 transition-opacity ${selectedPlan === "yearly" ? "opacity-100" : "opacity-0"}`}>
+                  ¥400/月相当
+                </p>
+              </div>
             </div>
             <ul className="space-y-2">
               {[
