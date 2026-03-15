@@ -136,7 +136,9 @@ function UpgradeContent() {
 
           {isActive && profile.current_period_end && (
             <div className="space-y-1">
-              <p className="text-xs text-slate-500">次回更新日</p>
+              <p className="text-xs text-slate-500">
+                {profile.plan_type === "yearly" ? "次回更新日" : "次回更新日"}
+              </p>
               <p className="text-slate-300 text-sm">
                 {new Date(profile.current_period_end).toLocaleDateString("ja-JP")}
               </p>
