@@ -166,7 +166,7 @@ function UpgradeContent() {
               >
                 年額
               </button>
-              <span className="absolute -top-2.5 -right-1.5 bg-amber-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">お得</span>
+              <span className="absolute -top-3 -right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md leading-none z-10 shadow-sm">お得</span>
             </div>
           </div>
 

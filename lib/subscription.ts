@@ -10,7 +10,7 @@ export const FREE_ANALYSIS_COUNT = 3;
 export const ANALYSIS_THRESHOLDS = [2, 2, 3] as const;
 
 /** 有料ユーザーの分析に必要なログ数 */
-export const PAID_ANALYSIS_THRESHOLD = 7;
+export const PAID_ANALYSIS_THRESHOLD = 3;
 
 /**
  * 次の分析に必要な「前回分析からの新規ログ数」を返す。
@@ -34,7 +34,7 @@ export type AnalysisStatus = {
   isAdmin: boolean;
   totalAnalysesCount: number;
   unanalyzedCount: number;    // 前回分析以降のログ数
-  cycleTarget: number;        // 現サイクルのランプ上限（2 / 3 / 7）
+  cycleTarget: number;        // 現サイクルのランプ上限（2 / 2 / 3）
   logsUntilNextAnalysis: number; // あと何件で分析可能か（0なら今すぐ可能）
 };
 
@@ -88,7 +88,7 @@ export async function getAnalysisStatus(
   } else if (isSubscribed) {
     cycleTarget = PAID_ANALYSIS_THRESHOLD;
   } else {
-    cycleTarget = PAID_ANALYSIS_THRESHOLD; // 未課金でも表示用に7
+    cycleTarget = PAID_ANALYSIS_THRESHOLD; // 未課金でも表示用に3
   }
 
   return {

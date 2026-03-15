@@ -352,7 +352,7 @@ export default function NightGreenhouse() {
 
       {/* ログカウント（進捗ランプ）— 常にレンダリングしてレイアウトシフトを防ぐ */}
       <div data-onboarding="progress-lamps" className="flex gap-2 items-center">
-        {Array.from({ length: dayStatus?.cycleTarget ?? 7 }, (_, i) => (
+        {Array.from({ length: dayStatus?.cycleTarget ?? 3 }, (_, i) => (
           <div
             key={i}
             className={`w-3 h-3 rounded-full transition-all ${i < cycleLogCount
@@ -362,7 +362,7 @@ export default function NightGreenhouse() {
           />
         ))}
         <span className="text-xs text-slate-600 ml-1">
-          {cycleLogCount}/{dayStatus?.cycleTarget ?? 7}日
+          {cycleLogCount}/{dayStatus?.cycleTarget ?? 3}日
         </span>
       </div>
 

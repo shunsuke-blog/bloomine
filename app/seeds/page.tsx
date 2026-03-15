@@ -164,7 +164,7 @@ export default function FlowersPage() {
       ) : flowers.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <p className="text-slate-600 text-sm">まだ花が咲いていません</p>
-          <p className="text-slate-700 text-xs">7日間ログを記録すると、強みの花が咲きます</p>
+          <p className="text-slate-700 text-xs">3日間ログを記録すると、強みの花が咲きます</p>
         </div>
       ) : (
         <div className="space-y-3">

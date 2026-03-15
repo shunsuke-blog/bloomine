@@ -180,7 +180,7 @@ export default function TreasuresPage() {
       ) : treasures.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <p className="text-slate-600 text-sm">まだ宝物が見つかっていません</p>
-          <p className="text-slate-700 text-xs">7日間ログを記録すると、価値観の宝物が現れます</p>
+          <p className="text-slate-700 text-xs">3日間ログを記録すると、価値観の宝物が現れます</p>
         </div>
       ) : (
         <div className="space-y-3">
