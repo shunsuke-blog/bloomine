@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="200" fill="#faf6ef"/>
+
+  <!-- Subtle inner glow ring -->
+  <circle cx="200" cy="200" r="195" fill="none" stroke="#f0c080" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Stem -->
+  <path d="M200 310 Q196 265 200 220" stroke="#4a7c5f" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Leaves -->
+  <path d="M200 275 Q172 252 165 230 Q188 244 200 265" fill="#6aaa84" opacity="0.75"/>
+  <path d="M200 255 Q228 236 235 215 Q212 230 200 250" fill="#6aaa84" opacity="0.6"/>
+
+  <!-- Petals (8枚) -->
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#f0c080" opacity="0.92" transform="rotate(0,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#e8a868" opacity="0.87" transform="rotate(45,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#f0c080" opacity="0.92" transform="rotate(90,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#e8a868" opacity="0.87" transform="rotate(135,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#f0c080" opacity="0.92" transform="rotate(180,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#e8a868" opacity="0.87" transform="rotate(225,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#f0c080" opacity="0.92" transform="rotate(270,200,200)"/>
+  <ellipse cx="200" cy="164" rx="18" ry="30" fill="#e8a868" opacity="0.87" transform="rotate(315,200,200)"/>
+
+  <!-- Flower center -->
+  <circle cx="200" cy="200" r="22" fill="#d4845a"/>
+  <circle cx="200" cy="200" r="14" fill="#c4703a"/>
+
+  <!-- Decorative sparkles -->
+  <text x="288" y="128" font-size="20" fill="#f0c080" opacity="0.75">✦</text>
+  <text x="100" y="148" font-size="14" fill="#d4845a" opacity="0.6">✦</text>
+  <text x="300" y="188" font-size="10" fill="#4a7c5f" opacity="0.5">✦</text>
+  <text x="85" y="230" font-size="8" fill="#c4973a" opacity="0.5">✦</text>
+</svg>
