@@ -148,6 +148,10 @@ export default function CalendarPage() {
             const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const hasLog = logDates.has(dateStr);
             const isSelected = selectedDate === dateStr;
+            const isToday =
+              year === today.getFullYear() &&
+              month === today.getMonth() + 1 &&
+              day === today.getDate();
 
             return (
               <button
@@ -157,6 +161,8 @@ export default function CalendarPage() {
                 className={`flex flex-col items-center justify-center h-10 rounded-lg text-sm transition-all ${
                   isSelected
                     ? "bg-emerald-900/50 border border-emerald-700 text-emerald-300"
+                    : isToday
+                    ? "border border-emerald-800/60 text-emerald-400"
                     : hasLog
                     ? "text-slate-200 hover:bg-slate-800/60"
                     : "text-slate-700 cursor-default"

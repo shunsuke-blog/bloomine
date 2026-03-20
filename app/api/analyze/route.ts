@@ -115,6 +115,7 @@ export async function POST() {
     const flowerLevelMap = new Map(existingFlowerLevels?.map(f => [f.id, f.level]) ?? []);
 
     const flowerCache: Record<string, string> = {};
+    const newFlowerIdSet = new Set<string>();
     const allRootInserts: { user_id: string; flower_id: string; log_id: string; root: string }[] = [];
 
     for (const fragment of flowerFragments) {
@@ -163,6 +164,7 @@ export async function POST() {
           flower_id = newFlower.id;
           flowerCache[name] = flower_id;
           flowerLevelMap.set(flower_id, flowerLevelGain);
+          newFlowerIdSet.add(flower_id);
         }
       }
 
@@ -207,6 +209,7 @@ export async function POST() {
     const treasureLevelMap = new Map(existingTreasureLevels?.map(t => [t.id, t.level]) ?? []);
 
     const treasureCache: Record<string, string> = {};
+    const newTreasureIdSet = new Set<string>();
     const allDigSiteInserts: { user_id: string; treasure_id: string; log_id: string; site: string }[] = [];
 
     for (const fragment of treasureFragments) {
@@ -256,6 +259,7 @@ export async function POST() {
           treasure_id = newTreasure.id;
           treasureCache[name] = treasure_id;
           treasureLevelMap.set(treasure_id, treasureLevelGain);
+          newTreasureIdSet.add(treasure_id);
         }
       }
 
@@ -322,11 +326,16 @@ export async function POST() {
         .order("level", { ascending: false }),
     ]);
 
+    const newFlowers = (updatedFlowers ?? []).filter(f => newFlowerIdSet.has(f.id));
+    const newTreasures = (updatedTreasures ?? []).filter(t => newTreasureIdSet.has(t.id));
+
     return NextResponse.json({
       flowers: updatedFlowers ?? [],
       fragment_count: flowerFragments.length,
       treasures: updatedTreasures ?? [],
       treasure_count: treasureFragments.length,
+      new_flowers: newFlowers,
+      new_treasures: newTreasures,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";

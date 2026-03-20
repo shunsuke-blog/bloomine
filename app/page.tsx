@@ -15,6 +15,8 @@ type AnalyzeResult = {
   fragment_count: number;
   treasures: { id: string; treasure_name: string; level: number }[];
   treasure_count: number;
+  new_flowers: { id: string; flower_name: string; level: number }[];
+  new_treasures: { id: string; treasure_name: string; level: number }[];
 };
 
 type DayStatus = {
@@ -229,6 +231,16 @@ export default function NightGreenhouse() {
 
   // 分析完了後の表示
   if (analyzeResult) {
+    const topFlower = analyzeResult.new_flowers[0];
+    const shareCardUrl = topFlower
+      ? `/api/share-card/flower?flower_name=${encodeURIComponent(topFlower.flower_name)}&level=${topFlower.level}`
+      : null;
+    const shareText = topFlower
+      ? `AIが見つけた私の強みは「${topFlower.flower_name}」でした 🌸\n毎日書くだけで、自分のことが少しずつわかってくる\n\n#bloomine #自己分析 #強み発見`
+      : "bloomineで自分の強みが見つかりました 🌸 #bloomine";
+    const shareUrl = "https://lp01.bloomines.com";
+    const xShareHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+
     return (
       <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
@@ -280,6 +292,39 @@ export default function NightGreenhouse() {
               >
                 価値観の宝庫を見る →
               </Link>
+            </div>
+          )}
+
+          {/* シェアカード */}
+          {shareCardUrl && (
+            <div className="space-y-3 pt-2 border-t border-slate-800">
+              <p className="text-xs text-slate-600 tracking-wider text-center">— 結果をシェアする —</p>
+              {/* シェアボタン */}
+              <div className="flex gap-2">
+                <a
+                  href={xShareHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 text-center bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
+                >
+                  𝕏 でシェア
+                </a>
+                <a
+                  href={shareCardUrl}
+                  download="bloomine-share.png"
+                  className="flex-1 py-3 text-center bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
+                >
+                  画像を保存
+                </a>
+              </div>
+              {/* カードプレビュー */}
+              <div className="rounded-xl overflow-hidden border border-slate-800">
+                <img
+                  src={shareCardUrl}
+                  alt="シェアカード"
+                  className="w-full"
+                />
+              </div>
             </div>
           )}
         </div>
