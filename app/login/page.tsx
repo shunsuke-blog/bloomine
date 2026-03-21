@@ -291,7 +291,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-start pt-[28vh] pb-12 px-4 sm:px-6">
       <Suspense>
         <LoginForm />
       </Suspense>

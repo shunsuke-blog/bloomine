@@ -142,7 +142,8 @@ export default function FlowersPage() {
   }, [router]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-950">
+    <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
       <div className="relative flex items-center justify-center pt-4">
         <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
           ← 心の土壌へ戻る
@@ -168,5 +169,6 @@ export default function FlowersPage() {
         </div>
       )}
     </main>
+    </div>
   );
 }
