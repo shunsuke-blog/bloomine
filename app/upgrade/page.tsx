@@ -238,7 +238,7 @@ function UpgradeContent() {
         onClick={() => router.push("/settings")}
         className="w-full text-xs text-slate-600 hover:text-slate-400 transition-colors"
       >
-        ← 設定へ戻る
+        ← 戻る
       </button>
     </div>
   );

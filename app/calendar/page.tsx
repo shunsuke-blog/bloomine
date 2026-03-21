@@ -104,7 +104,7 @@ export default function CalendarPage() {
       {/* ヘッダー */}
       <div className="w-full max-w-md flex items-center justify-between">
         <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          ← 心の土壌へ戻る
+          ← 戻る
         </Link>
         <h1 className="text-lg font-light tracking-widest text-emerald-400">記録の足跡</h1>
         <div className="w-14" />
