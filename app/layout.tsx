@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "bloomine",
   description: "毎日3分で、あなたの価値観と強みを見つける",
+  other: {
+    "theme-color": "#020617",
+  },
 };
 
 export default function RootLayout({
