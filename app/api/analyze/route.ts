@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT, ANALYZE_SYSTEM_PROMPT } from "@/lib/prompts";
+import { PROMPT_MAP } from "@/lib/messages";
 import { getAnalysisStatus } from "@/lib/subscription";
 import { RATE_LIMIT_MS } from "@/lib/constants";
 
@@ -51,7 +52,7 @@ export async function POST() {
     // 未分析ログを取得（前回分析以降の全件）
     const { data: logs, error: logsError } = await supabase
       .from("daily_logs")
-      .select("id, transcript, emotion_score, is_analyzed, week_number")
+      .select("id, transcript, emotion_score, is_analyzed, week_number, prompt_id")
       .eq("user_id", user.id)
       .eq("is_analyzed", false)
       .order("created_at", { ascending: true });
@@ -60,11 +61,16 @@ export async function POST() {
       return NextResponse.json({ error: "分析対象のログがありません" }, { status: 400 });
     }
 
-    const logInputs = logs.map((l, i) => ({
-      index: i,
-      transcript: l.transcript,
-      emotion_score: l.emotion_score,
-    }));
+    const logInputs = logs.map((l, i) => {
+      const prompt = l.prompt_id ? PROMPT_MAP.get(l.prompt_id) : null;
+      return {
+        index: i,
+        transcript: l.transcript,
+        emotion_score: l.emotion_score,
+        prompt_text: prompt?.text ?? null,
+        prompt_category: prompt?.category ?? null,
+      };
+    });
 
     // 既存の花・価値観を取得（並列）
     const [{ data: existingFlowers }, { data: existingTreasures }] = await Promise.all([

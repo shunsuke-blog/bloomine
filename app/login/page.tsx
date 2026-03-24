@@ -59,6 +59,7 @@ function LoginForm() {
           id: data.session.user.id,
           display_name: displayName,
         });
+        await fetch("/api/auth/notify-signup", { method: "POST" });
         router.push("/");
       } else {
         // メール確認あり → 確認メール送信済み

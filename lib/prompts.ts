@@ -1,5 +1,5 @@
 export const FRAGMENT_ANALYZE_PROMPT = (
-  logs: { index: number; transcript: string; emotion_score: number | null }[],
+  logs: { index: number; transcript: string; emotion_score: number | null; prompt_text: string | null; prompt_category: string | null }[],
   existingFlowers: { id: string; flower_name: string }[],
 ) => `あなたは「心の土壌」の強み分析者です。
 複数日のログを横断的に分析し、その人固有の「強みの断片」を自由な数だけ抽出してください。
@@ -26,7 +26,11 @@ export const FRAGMENT_ANALYZE_PROMPT = (
 ${JSON.stringify(existingFlowers.map((f) => ({ id: f.id, name: f.flower_name })))}
 
 ## ログ一覧
-${logs.map((l) => `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${l.transcript}`).join("\n\n---\n\n")}
+${logs.map((l) => {
+  const categoryLabel = l.prompt_category === "strength" ? "強み系" : l.prompt_category === "value" ? "価値観系" : l.prompt_category === "emotion" ? "感情系" : null;
+  const questionLine = l.prompt_text ? `【質問（${categoryLabel}）】${l.prompt_text}\n` : "【自由記述】\n";
+  return `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${questionLine}${l.transcript}`;
+}).join("\n\n---\n\n")}
 
 ## 指示
 1. ログ全体を横断的に読み、繰り返し現れる性質・際立つ性質を洗い出す
@@ -88,7 +92,7 @@ export const ANALYZE_SYSTEM_PROMPT = `あなたは「心の土壌」の深層分
 }`;
 
 export const VALUE_ANALYZE_PROMPT = (
-  logs: { index: number; transcript: string; emotion_score: number | null }[],
+  logs: { index: number; transcript: string; emotion_score: number | null; prompt_text: string | null; prompt_category: string | null }[],
   existingTreasures: { id: string; treasure_name: string }[],
 ) => `あなたは「心の土壌」の価値観分析者です。
 複数日のログを横断的に分析し、その人が大切にしている「価値観（宝物）」を自由な数だけ抽出してください。
@@ -114,7 +118,11 @@ export const VALUE_ANALYZE_PROMPT = (
 ${JSON.stringify(existingTreasures.map((t) => ({ id: t.id, name: t.treasure_name })))}
 
 ## ログ一覧
-${logs.map((l) => `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${l.transcript}`).join("\n\n---\n\n")}
+${logs.map((l) => {
+  const categoryLabel = l.prompt_category === "strength" ? "強み系" : l.prompt_category === "value" ? "価値観系" : l.prompt_category === "emotion" ? "感情系" : null;
+  const questionLine = l.prompt_text ? `【質問（${categoryLabel}）】${l.prompt_text}\n` : "【自由記述】\n";
+  return `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${questionLine}${l.transcript}`;
+}).join("\n\n---\n\n")}
 
 ## 指示
 1. ログ全体を横断的に読み、繰り返し現れる価値観・際立つ価値観を洗い出す

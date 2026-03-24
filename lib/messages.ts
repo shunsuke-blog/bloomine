@@ -225,6 +225,11 @@ const ALL_PROMPTS: JournalPrompt[] = [
   ...EMOTION_PROMPTS,
 ];
 
+/** prompt_id → { text, category } の逆引きマップ */
+export const PROMPT_MAP = new Map(
+  ALL_PROMPTS.map((p) => [p.id, { text: p.text, category: p.category }])
+);
+
 // 挨拶の3パターン
 const GREETINGS = [
   "今夜もここに来てくれましたね。",
