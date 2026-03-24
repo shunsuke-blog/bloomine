@@ -248,6 +248,39 @@ export default function NightGreenhouse() {
         {/* 花が咲いた植物 */}
         <PlantAnimation stage="flower" />
 
+        {/* シェアカード */}
+        {shareCardUrl && (
+          <div className="max-w-md w-full space-y-3">
+            <p className="text-xs text-slate-600 tracking-wider text-center">— 結果をシェアする —</p>
+            {/* シェアボタン */}
+            <div className="flex gap-2">
+              <a
+                href={xShareHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3 text-center bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
+              >
+                𝕏 でシェア
+              </a>
+              <a
+                href={shareCardUrl}
+                download="bloomine-share.png"
+                className="flex-1 py-3 text-center bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
+              >
+                画像を保存
+              </a>
+            </div>
+            {/* カードプレビュー */}
+            <div className="rounded-xl overflow-hidden border border-slate-800">
+              <img
+                src={shareCardUrl}
+                alt="シェアカード"
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-slate-500 tracking-widest">— 花が咲きました —</p>
 
         <div className="max-w-md w-full space-y-5">
@@ -295,38 +328,6 @@ export default function NightGreenhouse() {
             </div>
           )}
 
-          {/* シェアカード */}
-          {shareCardUrl && (
-            <div className="space-y-3 pt-2 border-t border-slate-800">
-              <p className="text-xs text-slate-600 tracking-wider text-center">— 結果をシェアする —</p>
-              {/* シェアボタン */}
-              <div className="flex gap-2">
-                <a
-                  href={xShareHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 text-center bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
-                >
-                  𝕏 でシェア
-                </a>
-                <a
-                  href={shareCardUrl}
-                  download="bloomine-share.png"
-                  className="flex-1 py-3 text-center bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
-                >
-                  画像を保存
-                </a>
-              </div>
-              {/* カードプレビュー */}
-              <div className="rounded-xl overflow-hidden border border-slate-800">
-                <img
-                  src={shareCardUrl}
-                  alt="シェアカード"
-                  className="w-full"
-                />
-              </div>
-            </div>
-          )}
         </div>
       </main>
     );

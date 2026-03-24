@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
     return new Response("flower_name is required", { status: 400 });
   }
 
+  const fontData = await fetch(
+    new URL("/NotoSansJP-Regular.ttf", request.url)
+  ).then((r) => r.arrayBuffer());
+
   return new ImageResponse(
     (
       <div
@@ -23,7 +27,7 @@ export async function GET(request: NextRequest) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "sans-serif",
+          fontFamily: "NotoSansJP",
           padding: "60px",
           position: "relative",
         }}
@@ -94,6 +98,13 @@ export async function GET(request: NextRequest) {
     {
       width: 1200,
       height: 630,
+      fonts: [
+        {
+          name: "NotoSansJP",
+          data: fontData,
+          style: "normal",
+        },
+      ],
     }
   );
 }
