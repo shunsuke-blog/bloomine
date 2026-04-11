@@ -183,7 +183,10 @@ export async function POST() {
 
     // root_elements を一括INSERT（N+1解消）
     if (allRootInserts.length > 0) {
-      await supabase.from("root_elements").insert(allRootInserts);
+      const { error: rootInsertError } = await supabase.from("root_elements").insert(allRootInserts);
+      if (rootInsertError) {
+        throw new Error(`根拠エピソードの保存に失敗しました: ${rootInsertError.message}`);
+      }
     }
 
     // ── 価値観の処理 ──────────────────────────────────────────────────────────
@@ -280,7 +283,10 @@ export async function POST() {
 
     // dig_sites を一括INSERT（N+1解消）
     if (allDigSiteInserts.length > 0) {
-      await supabase.from("dig_sites").insert(allDigSiteInserts);
+      const { error: digSiteInsertError } = await supabase.from("dig_sites").insert(allDigSiteInserts);
+      if (digSiteInsertError) {
+        throw new Error(`価値観の根拠エピソードの保存に失敗しました: ${digSiteInsertError.message}`);
+      }
     }
 
     // ── タネ（OS命名）の処理 ──────────────────────────────────────────────────

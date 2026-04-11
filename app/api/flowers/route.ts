@@ -31,7 +31,7 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json(flowersWithRoots);
+    return NextResponse.json(flowersWithRoots.filter((f) => f.roots.length > 0));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

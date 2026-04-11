@@ -31,7 +31,7 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json(treasuresWithSites);
+    return NextResponse.json(treasuresWithSites.filter((t) => t.sites.length > 0));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
