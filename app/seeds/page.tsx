@@ -27,76 +27,81 @@ type Flower = {
   roots: Root[];
 };
 
-function FlowerCard({ flower }: { flower: Flower }) {
-  const [open, setOpen] = useState(false);
+function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void }) {
   const [openRootId, setOpenRootId] = useState<string | null>(null);
 
   return (
-    <div className="border border-slate-800 rounded-2xl overflow-hidden">
-      {/* カードヘッダー */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full p-5 text-left hover:bg-slate-900/40 transition-colors"
-      >
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-lg font-light text-emerald-300 tracking-wide">{flower.flower_name}</p>
-            {flower.os_description && (
-              <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                {flower.os_description}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-1 shrink-0 ml-4">
-            <span className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full">
-              Lv.{flower.level}
-            </span>
-            <span className="text-xs text-slate-700">{flower.roots.length}件の根</span>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* 背景オーバーレイ */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* ボトムシート */}
+      <div className="relative bg-slate-900 rounded-t-3xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        {/* ドラッグハンドル */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-8 h-1 bg-slate-700 rounded-full" />
         </div>
-      </button>
 
-      {/* 展開：詳細 + 根っこ一覧 */}
-      {open && (
-        <div className="border-t border-slate-800/60 bg-slate-950/40">
-          {/* 詳細分析 */}
-          <div className="p-5 space-y-3">
-            {flower.os_description && (
-              <div className="space-y-1">
-                <p className="text-xs text-emerald-700 tracking-wider">花の解説</p>
-                <p className="text-sm text-slate-300 leading-relaxed">{flower.os_description}</p>
-              </div>
-            )}
-            {flower.logic_reflection && (
-              <div className="space-y-1">
-                <p className="text-xs text-slate-600 tracking-wider">過去の苦しみの再定義</p>
-                <p className="text-sm text-slate-400 leading-relaxed">{flower.logic_reflection}</p>
-              </div>
-            )}
-            {flower.environment_condition && (
-              <div className="space-y-1">
-                <p className="text-xs text-slate-600 tracking-wider">輝ける土壌</p>
-                <p className="text-sm text-slate-400 leading-relaxed">{flower.environment_condition}</p>
-              </div>
-            )}
+        {/* ヘッダー */}
+        <div className="px-6 pt-3 pb-4 flex items-start justify-between shrink-0">
+          <div className="space-y-1.5">
+            <p className="text-xl font-light text-emerald-300 tracking-wide">{flower.flower_name}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+                Lv.{flower.level}
+              </span>
+              <span className="text-xs text-slate-600">{flower.roots.length}件の根</span>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
 
-          {/* 根っこ（根拠エピソード） */}
+        {/* スクロールコンテンツ */}
+        <div className="overflow-y-auto px-6 pb-10 space-y-5">
+          {flower.os_description && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-emerald-700 tracking-wider">花の解説</p>
+              <p className="text-sm text-slate-300 leading-relaxed">{flower.os_description}</p>
+            </div>
+          )}
+          {flower.logic_reflection && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-slate-600 tracking-wider">過去の苦しみの再定義</p>
+              <p className="text-sm text-slate-400 leading-relaxed">{flower.logic_reflection}</p>
+            </div>
+          )}
+          {flower.environment_condition && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-slate-600 tracking-wider">輝ける土壌</p>
+              <p className="text-sm text-slate-400 leading-relaxed">{flower.environment_condition}</p>
+            </div>
+          )}
+
           {flower.roots.length > 0 && (
-            <div className="border-t border-slate-800/40 p-5 space-y-2">
+            <div className="space-y-2 pt-2 border-t border-slate-800/40">
               <p className="text-xs text-slate-600 tracking-wider mb-3">根っこ（証拠）</p>
               {flower.roots.map((root) => (
                 <div key={root.id} className="space-y-1">
                   <button
                     onClick={() => setOpenRootId(openRootId === root.id ? null : root.id)}
-                    className="w-full text-left p-3 bg-slate-900/60 border border-slate-800 rounded-xl hover:border-emerald-900/60 transition-colors"
+                    className="w-full text-left p-3 bg-slate-950/60 border border-slate-800 rounded-xl hover:border-emerald-900/60 transition-colors"
                   >
                     <p className="text-xs text-slate-400 leading-relaxed">{root.root}</p>
                     <p className="text-xs text-slate-700 mt-1">
                       {openRootId === root.id ? "▲ 閉じる" : "▼ 元のエピソードを見る"}
                     </p>
                   </button>
-
                   {openRootId === root.id && root.daily_logs && (
                     <div className="ml-3 p-3 bg-slate-900/30 border-l border-emerald-900/40 rounded-r-xl">
                       {root.daily_logs.emotion_score !== null && (
@@ -114,13 +119,50 @@ function FlowerCard({ flower }: { flower: Flower }) {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+function FlowerGridCard({ flower, onClick }: { flower: Flower; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:border-emerald-800/50 hover:bg-slate-900 transition-all active:scale-95 w-full"
+    >
+      {/* アイコンプレースホルダー */}
+      <div className="w-full aspect-square rounded-xl bg-emerald-950/30 border border-emerald-900/20 flex items-center justify-center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-800">
+          <circle cx="12" cy="7.5" r="4.2" />
+          <circle cx="16.3" cy="10.6" r="4.2" />
+          <circle cx="14.6" cy="15.6" r="4.2" />
+          <circle cx="9.4" cy="15.6" r="4.2" />
+          <circle cx="7.7" cy="10.6" r="4.2" />
+          <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+        </svg>
+      </div>
+
+      {/* タイトル */}
+      <div className="flex-1">
+        <p className="text-sm font-light text-emerald-300 tracking-wide leading-snug line-clamp-2">
+          {flower.flower_name}
+        </p>
+      </div>
+
+      {/* フッター */}
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[10px] bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full shrink-0">
+          Lv.{flower.level}
+        </span>
+        <span className="text-[10px] text-slate-600 text-right">{flower.roots.length}件の根</span>
+      </div>
+    </button>
   );
 }
 
 export default function FlowersPage() {
   const [flowers, setFlowers] = useState<Flower[]>([]);
+  const [selected, setSelected] = useState<Flower | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -143,32 +185,40 @@ export default function FlowersPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-    <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
-      <div className="relative flex items-center justify-center pt-4">
-        <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          ← 戻る
-        </Link>
-        <div className="text-center">
-          <h1 className="text-xl font-light tracking-widest text-emerald-400">強みの庭</h1>
-          <p className="text-xs text-slate-600 mt-1">積み重ねられた、あなたの性質たち</p>
+      <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
+        <div className="relative flex items-center justify-center pt-4">
+          <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
+            ← 戻る
+          </Link>
+          <div className="text-center">
+            <h1 className="text-xl font-light tracking-widest text-emerald-400">強みの庭</h1>
+            <p className="text-xs text-slate-600 mt-1">積み重ねられた、あなたの性質たち</p>
+          </div>
         </div>
-      </div>
 
-      {loading ? (
-        <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>
-      ) : flowers.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <p className="text-slate-600 text-sm">まだ花が咲いていません</p>
-          <p className="text-slate-700 text-xs">3日間ログを記録すると、強みの花が咲きます</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {flowers.map((flower) => (
-            <FlowerCard key={flower.id} flower={flower} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>
+        ) : flowers.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            <p className="text-slate-600 text-sm">まだ花が咲いていません</p>
+            <p className="text-slate-700 text-xs">3日間ログを記録すると、強みの花が咲きます</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {flowers.map((flower) => (
+              <FlowerGridCard
+                key={flower.id}
+                flower={flower}
+                onClick={() => setSelected(flower)}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {selected && (
+        <FlowerModal flower={selected} onClose={() => setSelected(null)} />
       )}
-    </main>
     </div>
   );
 }

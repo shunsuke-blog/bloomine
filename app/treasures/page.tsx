@@ -28,91 +28,96 @@ type Treasure = {
   sites: DigSite[];
 };
 
-function TreasureCard({ treasure }: { treasure: Treasure }) {
-  const [open, setOpen] = useState(false);
+function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () => void }) {
   const [openSiteId, setOpenSiteId] = useState<string | null>(null);
 
   return (
-    <div className="border border-slate-800 rounded-2xl overflow-hidden">
-      {/* カードヘッダー */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full p-5 text-left hover:bg-slate-900/40 transition-colors"
-      >
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-lg font-light text-amber-300 tracking-wide">{treasure.treasure_name}</p>
-            {treasure.description && (
-              <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                {treasure.description}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-1 shrink-0 ml-4">
-            <span className="text-xs bg-amber-900/40 text-amber-400 border border-amber-800/50 px-2 py-0.5 rounded-full">
-              Lv.{treasure.level}
-            </span>
-            <span className="text-xs text-slate-700">{treasure.sites.length}件の発掘場所</span>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* 背景オーバーレイ */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* ボトムシート */}
+      <div className="relative bg-slate-900 rounded-t-3xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        {/* ドラッグハンドル */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-8 h-1 bg-slate-700 rounded-full" />
         </div>
-      </button>
 
-      {/* 展開：詳細 + 発掘場所一覧 */}
-      {open && (
-        <div className="border-t border-slate-800/60 bg-slate-950/40">
-          {/* 詳細 */}
-          <div className="p-5 space-y-3">
-            {treasure.description && (
-              <div className="space-y-1">
-                <p className="text-xs text-amber-700 tracking-wider">宝物の解説</p>
-                <p className="text-sm text-slate-300 leading-relaxed">{treasure.description}</p>
-              </div>
-            )}
-            {treasure.fulfillment_state && (
-              <div className="space-y-1">
-                <p className="text-xs text-amber-700 tracking-wider">✦ さらに光輝かせるために(価値観が満たされているとき)</p>
-                <p className="text-sm text-slate-300 leading-relaxed">{treasure.fulfillment_state}</p>
-              </div>
-            )}
-            {treasure.threat_signal && (
-              <div className="space-y-1">
-                <p className="text-xs text-amber-700 tracking-wider">⚠ 宝を失わないために(価値観が脅かされているサイン)</p>
-                <p className="text-sm text-slate-300 leading-relaxed">{treasure.threat_signal}</p>
-              </div>
-            )}
-            {treasure.keywords && treasure.keywords.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-600 tracking-wider">キーワード</p>
-                <div className="flex flex-wrap gap-2">
-                  {treasure.keywords.map((kw, i) => (
-                    <span
-                      key={i}
-                      className="text-xs px-2 py-0.5 bg-amber-900/30 border border-amber-800/40 text-amber-400 rounded-full"
-                    >
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* ヘッダー */}
+        <div className="px-6 pt-3 pb-4 flex items-start justify-between shrink-0">
+          <div className="space-y-1.5">
+            <p className="text-xl font-light text-amber-300 tracking-wide">{treasure.treasure_name}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-amber-900/40 text-amber-400 border border-amber-800/50 px-2 py-0.5 rounded-full">
+                Lv.{treasure.level}
+              </span>
+              <span className="text-xs text-slate-600">{treasure.sites.length}件の発掘場所</span>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
 
-          {/* 発掘場所（根拠エピソード） */}
+        {/* スクロールコンテンツ */}
+        <div className="overflow-y-auto px-6 pb-10 space-y-5">
+          {treasure.description && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-amber-700 tracking-wider">宝物の解説</p>
+              <p className="text-sm text-slate-300 leading-relaxed">{treasure.description}</p>
+            </div>
+          )}
+          {treasure.fulfillment_state && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-amber-700 tracking-wider">✦ さらに光輝かせるために</p>
+              <p className="text-sm text-slate-300 leading-relaxed">{treasure.fulfillment_state}</p>
+            </div>
+          )}
+          {treasure.threat_signal && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-amber-700 tracking-wider">⚠ 宝を失わないために</p>
+              <p className="text-sm text-slate-300 leading-relaxed">{treasure.threat_signal}</p>
+            </div>
+          )}
+          {treasure.keywords && treasure.keywords.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600 tracking-wider">キーワード</p>
+              <div className="flex flex-wrap gap-2">
+                {treasure.keywords.map((kw, i) => (
+                  <span
+                    key={i}
+                    className="text-xs px-2 py-0.5 bg-amber-900/30 border border-amber-800/40 text-amber-400 rounded-full"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {treasure.sites.length > 0 && (
-            <div className="border-t border-slate-800/40 p-5 space-y-2">
+            <div className="space-y-2 pt-2 border-t border-slate-800/40">
               <p className="text-xs text-slate-600 tracking-wider mb-3">発掘場所（証拠）</p>
               {treasure.sites.map((site) => (
                 <div key={site.id} className="space-y-1">
                   <button
                     onClick={() => setOpenSiteId(openSiteId === site.id ? null : site.id)}
-                    className="w-full text-left p-3 bg-slate-900/60 border border-slate-800 rounded-xl hover:border-amber-900/60 transition-colors"
+                    className="w-full text-left p-3 bg-slate-950/60 border border-slate-800 rounded-xl hover:border-amber-900/60 transition-colors"
                   >
                     <p className="text-xs text-slate-400 leading-relaxed">{site.site}</p>
                     <p className="text-xs text-slate-700 mt-1">
                       {openSiteId === site.id ? "▲ 閉じる" : "▼ 元のエピソードを見る"}
                     </p>
                   </button>
-
                   {openSiteId === site.id && site.daily_logs && (
                     <div className="ml-3 p-3 bg-slate-900/30 border-l border-amber-900/40 rounded-r-xl">
                       {site.daily_logs.emotion_score !== null && (
@@ -130,13 +135,47 @@ function TreasureCard({ treasure }: { treasure: Treasure }) {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+function TreasureGridCard({ treasure, onClick }: { treasure: Treasure; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:border-amber-800/50 hover:bg-slate-900 transition-all active:scale-95 w-full"
+    >
+      {/* アイコンプレースホルダー */}
+      <div className="w-full aspect-square rounded-xl bg-amber-950/20 border border-amber-900/20 flex items-center justify-center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-amber-800">
+          <path d="M6 3h12l4 6-10 12L2 9z" />
+          <line x1="2" y1="9" x2="22" y2="9" />
+          <polyline points="6 3 12 9 18 3" />
+        </svg>
+      </div>
+
+      {/* タイトル */}
+      <div className="flex-1">
+        <p className="text-sm font-light text-amber-300 tracking-wide leading-snug line-clamp-2">
+          {treasure.treasure_name}
+        </p>
+      </div>
+
+      {/* フッター */}
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[10px] bg-amber-900/40 text-amber-400 border border-amber-800/50 px-2 py-0.5 rounded-full shrink-0">
+          Lv.{treasure.level}
+        </span>
+        <span className="text-[10px] text-slate-600 text-right">{treasure.sites.length}件の発掘</span>
+      </div>
+    </button>
   );
 }
 
 export default function TreasuresPage() {
   const [treasures, setTreasures] = useState<Treasure[]>([]);
+  const [selected, setSelected] = useState<Treasure | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -159,32 +198,40 @@ export default function TreasuresPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-    <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
-      <div className="relative flex items-center justify-center pt-4">
-        <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          ← 戻る
-        </Link>
-        <div className="text-center">
-          <h1 className="text-xl font-light tracking-widest text-amber-400">価値観の宝庫</h1>
-          <p className="text-xs text-slate-600 mt-1">あなたが大切にしてきた、宝物たち</p>
+      <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
+        <div className="relative flex items-center justify-center pt-4">
+          <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
+            ← 戻る
+          </Link>
+          <div className="text-center">
+            <h1 className="text-xl font-light tracking-widest text-amber-400">価値観の宝庫</h1>
+            <p className="text-xs text-slate-600 mt-1">あなたが大切にしてきた、宝物たち</p>
+          </div>
         </div>
-      </div>
 
-      {loading ? (
-        <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>
-      ) : treasures.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <p className="text-slate-600 text-sm">まだ宝物が見つかっていません</p>
-          <p className="text-slate-700 text-xs">3日間ログを記録すると、価値観の宝物が現れます</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {treasures.map((treasure) => (
-            <TreasureCard key={treasure.id} treasure={treasure} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>
+        ) : treasures.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            <p className="text-slate-600 text-sm">まだ宝物が見つかっていません</p>
+            <p className="text-slate-700 text-xs">3日間ログを記録すると、価値観の宝物が現れます</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {treasures.map((treasure) => (
+              <TreasureGridCard
+                key={treasure.id}
+                treasure={treasure}
+                onClick={() => setSelected(treasure)}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {selected && (
+        <TreasureModal treasure={selected} onClose={() => setSelected(null)} />
       )}
-    </main>
     </div>
   );
 }
