@@ -39,6 +39,15 @@ ${logs.map((l) => {
 4. 既存の強みリストと照合し、同じ性質なら flower_id を指定する
 5. 新しい性質なら is_new_flower: true とし、詳細を生成する
 
+## via_category の値
+各断片には必ず以下のいずれか1つを via_category として割り当てること:
+- "wisdom"       … 知恵と知識（好奇心・学習欲・創造性・洞察力）
+- "courage"      … 勇気（誠実さ・熱意・忍耐力・勇敢さ）
+- "humanity"     … 人間性（思いやり・愛情・社会的知性）
+- "justice"      … 公正さ（チームワーク・公平さ・リーダーシップ）
+- "temperance"   … 節制（謙虚さ・慎重さ・自己調整力）
+- "transcendence"… 超越性（感謝・希望・ユーモア・審美眼）
+
 ## 出力形式（必ずこのJSONのみを返すこと）
 {
   "fragments": [
@@ -48,7 +57,8 @@ ${logs.map((l) => {
         { "log_index": 2, "root": "Day3でこの性質が現れた場面の要約（50字以内）" }
       ],
       "is_new_flower": false,
-      "flower_id": "既存の花のUUID"
+      "flower_id": "既存の花のUUID",
+      "via_category": "wisdom"
     },
     {
       "roots": [
@@ -58,7 +68,8 @@ ${logs.map((l) => {
       "flower_name": "新しい二つ名（10字以内、動詞で命名）",
       "os_description": "その性質を深く肯定する解説（150字以内）",
       "logic_reflection": "過去の苦しみを強みの裏返しとして再定義する文（150字以内）",
-      "environment_condition": "その性質が最も輝く環境・条件（100字以内）"
+      "environment_condition": "その性質が最も輝く環境・条件（100字以内）",
+      "via_category": "courage"
     }
   ]
 }`;

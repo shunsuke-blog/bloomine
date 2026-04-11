@@ -100,6 +100,7 @@ export async function POST() {
       os_description?: string;
       logic_reflection?: string;
       environment_condition?: string;
+      via_category?: string;
     };
 
     let flowerFragments: FlowerFragment[];
@@ -139,7 +140,10 @@ export async function POST() {
         const currentLevel = flowerLevelMap.get(flower_id) ?? 1;
         await supabase
           .from("flower_collection")
-          .update({ level: currentLevel + flowerLevelGain })
+          .update({
+            level: currentLevel + flowerLevelGain,
+            ...(fragment.via_category ? { via_category: fragment.via_category } : {}),
+          })
           .eq("id", flower_id);
         flowerLevelMap.set(flower_id, currentLevel + flowerLevelGain);
       } else {
@@ -161,6 +165,7 @@ export async function POST() {
               os_description: fragment.os_description ?? null,
               logic_reflection: fragment.logic_reflection ?? null,
               environment_condition: fragment.environment_condition ?? null,
+              via_category: fragment.via_category ?? null,
               level: flowerLevelGain,
             })
             .select("id")

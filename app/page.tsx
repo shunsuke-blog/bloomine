@@ -351,7 +351,7 @@ export default function NightGreenhouse() {
         </Link>
       </div>
 
-      {/* ナビゲーション行: カレンダー / 価値観の宝庫 / 強みの庭 */}
+      {/* ナビゲーション行: カレンダー / 価値観の宝庫 / 強みの庭 / レポート */}
       <div className="flex items-center gap-2">
         <Link
           href="/calendar"
@@ -393,6 +393,19 @@ export default function NightGreenhouse() {
             <circle cx="9.4"  cy="15.6" r="4.2" />
             <circle cx="7.7"  cy="10.6" r="4.2" />
             <circle cx="12"   cy="12"   r="3.5" fill="currentColor" stroke="none" />
+          </svg>
+        </Link>
+        <Link
+          href="/report"
+          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+          aria-label="成長レポート"
+        >
+          {/* 棒グラフアイコン */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6"  y1="20" x2="6"  y2="14" />
+            <line x1="2"  y1="20" x2="22" y2="20" />
           </svg>
         </Link>
       </div>

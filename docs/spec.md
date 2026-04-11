@@ -1,8 +1,8 @@
 # bloomine — 技術仕様書
 
-**バージョン:** v5.0
-**最終更新:** 2026年3月15日
-**ステータス:** Phase 0〜6 完了・本番稼働中
+**バージョン:** v6.0
+**最終更新:** 2026年4月11日
+**ステータス:** Phase 0〜6 完了・本番稼働中 / Phase 7 設計中
 **ドメイン:** https://bloomines.com
 
 ---
@@ -163,13 +163,33 @@ levelGain = Math.ceil(Math.sqrt(rootEntries.length))
 - **発掘場所クリック:** 根拠となるログ原文（transcript）を逆引き
 - **アクセス制御:** 有料ユーザー・管理者・無料トライアル期間中のみ閲覧可能
 
-### 3.7 カレンダー機能 ✅
+### 3.7 新規登録者通知 ✅
+
+新規ユーザーが登録した際、裏側で `bloomine.support@gmail.com` に通知メールを送信する。
+- メール内容: ユーザーID・メールアドレス・登録日時
+- 送信タイミング: `/auth/callback` (メール確認ありの場合) または `/login` の登録成功時
+- 実装: Resend APIを使用（既存のお問い合わせ機能と同じ仕組み）
+- ユーザー側の操作には一切影響しない
+
+### 3.8 カレンダー機能 ✅
 
 - 月ごとのログ記録日をカレンダー形式で表示
 - 記録のある日は緑ドットで表示、クリックでその日のログ一覧を展開
 - 月ごとのデータをキャッシュ（TTL: 60秒）してAPI呼び出しを削減
 
-### 3.8 認証・アカウント管理 ✅
+### 3.9 レポートページ（Phase 7 設計中）
+
+強みの庭・価値観の宝庫とは別の独立したページ（`/report`）として実装予定。
+
+**構成（実装順）:**
+
+1. **価値観ピラミッド** — レベル上位5件の価値観をピラミッド型で可視化。ピラミッドの頂点が最上位。
+2. **週次カード** — `seeds_collection` の履歴を週ごとにカード表示。過去のOS（タネ）を振り返られる。
+3. **強みレーダーチャート** — VIA 6徳目（知恵/勇気/人間性/公正/節制/超越）を軸に、どのカテゴリに強みが集中しているかを表示。AIが各強みをカテゴリに分類する処理が必要。
+
+**アクセス制御:** 強みの庭・価値観の宝庫と同様（`hasAccessWithFreeTrial`）。
+
+### 3.11 認証・アカウント管理 ✅
 
 | 機能           | 説明                                                         |
 | -------------- | ------------------------------------------------------------ |
@@ -179,7 +199,7 @@ levelGain = Math.ceil(Math.sqrt(rootEntries.length))
 | ログアウト     | 設定ページから確認ダイアログ付きでログアウト。localStorage（オンボーディングフラグ）もクリア |
 | メール確認     | ON の場合は auth/callback で user_profiles を upsert         |
 
-### 3.9 設定ページ ✅
+### 3.12 設定ページ ✅
 
 | 機能                 | 説明                                                    |
 | -------------------- | ------------------------------------------------------- |
@@ -190,7 +210,7 @@ levelGain = Math.ceil(Math.sqrt(rootEntries.length))
 | プランを確認する     | 有料ユーザーには「解約する」ボタン（警告色）を表示。無料ユーザーには表示しない |
 | ログアウト           | 確認ポップアップ表示後にサインアウト → /login へリダイレクト |
 
-### 3.10 サブスクリプション（プラン・お支払い）✅
+### 3.13 サブスクリプション（プラン・お支払い）✅
 
 | 機能                 | 説明                                                          |
 | -------------------- | ------------------------------------------------------------- |
@@ -353,7 +373,21 @@ levelGain = Math.ceil(Math.sqrt(rootEntries.length))
 | `emotion`     | 10問   | CBT・エクスプレッシブライティング（Pennebaker, 1997）|
 | `free`        | 固定1問| 自由記述（常に表示）                              |
 
-選ばれた問いの `id`（例: `s01`, `v03`, `e07`）は `daily_logs.prompt_id` に保存し、AI分析時に「この問いに答えたエピソード」として活用する。
+選ばれた問いの `id`（例: `s01`, `v03`, `e07`）は `daily_logs.prompt_id` に保存する。
+AI分析時には `PROMPT_MAP`（`lib/messages.ts`）で `prompt_id` → `{ text, category }` に逆引きし、各ログの質問文・カテゴリをプロンプトに含めて渡す。
+
+**分析時のログフォーマット（`FRAGMENT_ANALYZE_PROMPT` / `VALUE_ANALYZE_PROMPT`）:**
+```
+Day1（感情スコア: 7）
+【質問（強み系）】今日、気づいたら時間を忘れて取り組んでいたことはありましたか？
+（ユーザーの回答）
+
+---
+
+Day2（感情スコア: 5）
+【自由記述】
+（ユーザーの回答）
+```
 
 ---
 
@@ -510,6 +544,12 @@ FREE_TRIAL_DAYS = 7         // 無料トライアル期間（日数）
 - AIレスポンスのJSONパースは try/catch で保護。パース失敗時は 422 を返す
 - タネ（OS命名）のパース失敗は致命的でないため処理を継続
 - Stripe checkout URL未取得時はアラートでエラー内容を表示
+- `root_elements` / `dig_sites` のバッチINSERT失敗時は明示的にエラーをthrow（花・価値観だけが作成されて根拠なしになるのを防ぐ）
+
+### データ整合性
+
+- `root_elements` が0件の花は `/api/flowers` のレスポンスから除外（フィルタリング）
+- `dig_sites` が0件の価値観は `/api/treasures` のレスポンスから除外
 
 ### コスト管理
 
@@ -559,6 +599,7 @@ app/
   calendar/page.tsx               # カレンダー（過去ログの日付ブラウズ。60秒キャッシュ）
   seeds/page.tsx                  # 強みの庭（花カード一覧・詳細展開）
   treasures/page.tsx              # 価値観の宝庫（価値観カード一覧・詳細展開）
+  report/page.tsx                 # レポートページ（価値観ピラミッド・週次カード・強みレーダーチャート）【Phase 7 実装予定】
   auth/callback/route.ts          # メール確認後のコールバック（user_profiles upsert）
   api/
     logs/route.ts                 # ログ保存 POST / 更新 PUT（認証必須・prompt_id対応）
@@ -566,8 +607,9 @@ app/
     analyze/route.ts              # 分析実行（Gemini並列。24時間レート制限。N+1解消済み）
     calendar/route.ts             # 月ごとのログ日付一覧
     calendar/[date]/route.ts      # 指定日のログ一覧
-    flowers/route.ts              # 花コレクション取得
-    treasures/route.ts            # 価値観コレクション取得
+    flowers/route.ts              # 花コレクション取得（根拠0件は除外）
+    treasures/route.ts            # 価値観コレクション取得（根拠0件は除外）
+    report/route.ts               # レポートデータ取得【Phase 7 実装予定】
     contact/route.ts              # お問い合わせ送信
     stripe/
       create-checkout/route.ts    # Stripe Checkout セッション作成
@@ -595,11 +637,16 @@ lib/
 middleware.ts                     # 認証ガード（/api/stripe/webhook は除外）
 
 supabase/migrations/
-  001_initial_schema.sql
-  002_flower_schema.sql
-  003_contact_messages.sql
-  004_user_profiles.sql
-  005_user_profiles_timezone.sql
+  001_initial_schema.sql          # daily_logs・基本スキーマ
+  002_flower_schema.sql           # flower_collection・root_elements
+  003_contact_messages.sql        # contact_messages
+  004_user_profiles.sql           # user_profiles
+  005_user_profiles_timezone.sql  # timezone カラム追加
+  006_remove_ai_response.sql      # daily_logs.ai_response 削除
+  006_subscriptions.sql           # サブスクリプション関連カラム
+  007_freemium.sql                # フリーミアム関連
+  007_treasure_collection.sql     # treasure_collection・dig_sites・seeds_collection
+  008_add_prompt_id_to_logs.sql   # daily_logs.prompt_id カラム追加
 ```
 
 ---
@@ -671,11 +718,20 @@ supabase/migrations/
 - [x] 設定ページの「プランを確認する」（有料ユーザーのみ「解約する」表示）
 - [x] 無料トライアル期間（7日間）アクセス制御
 
+### Phase 7 — レポートページ（設計中）
+
+- [ ] `/report` ページ新設（強みの庭・価値観の宝庫とは独立）
+- [ ] 価値観ピラミッド（上位5件をレベル降順でピラミッド可視化）
+- [ ] 週次カード（seeds_collectionを週ごとにカード表示）
+- [ ] 強みレーダーチャート（VIA 6徳目に強みを分類・Rechartsなど使用）
+- [ ] AIによる強みのVIAカテゴリ分類処理
+- [ ] ホーム画面ナビゲーションへのレポートボタン追加
+
 ### 今後の候補
 
 - [ ] プッシュ通知（毎晩のリマインダー）
-- [ ] ジャーナルプロンプトの選択履歴をAI分析に活用
-- [ ] seeds_collection（OS命名）の閲覧UI
+- [ ] 感情スコアの推移グラフ（週ごとの平均）
+- [ ] 総合サマリー（累計ログ数・分析回数・最高Lv.強み）
 
 ---
 
@@ -709,3 +765,8 @@ supabase/migrations/
 | 2026-03-15 | ログアウト時にlocalStorage（オンボーディングフラグ）をクリアするよう修正                |
 | 2026-03-15 | daily_logs に prompt_id カラム追加（選ばれた問いかけIDを保存）                         |
 | 2026-03-15 | プロジェクト名を「夜の温室 (Night Greenhouse)」→「bloomine」に変更                     |
+| 2026-04-11 | 新規登録者通知メール実装（Resend経由でbloomine.support@gmail.comへ送信）                |
+| 2026-04-11 | AI分析時に質問文・カテゴリをプロンプトへ渡すよう改善（PROMPT_MAP逆引き）               |
+| 2026-04-11 | root_elements/dig_sitesのINSERT失敗時にエラーをthrowするよう修正（根拠なし花バグ対応） |
+| 2026-04-11 | 根拠0件の花・価値観をAPIレスポンスから除外するフィルタリング追加                       |
+| 2026-04-11 | レポートページ方針決定: 価値観ピラミッド＋週次カード＋強みレーダーチャート（VIA軸）    |
