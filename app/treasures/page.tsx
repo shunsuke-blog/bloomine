@@ -55,21 +55,27 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
           <div className="w-8 h-1 bg-slate-700 rounded-full" />
         </div>
         <div className="px-6 pt-3 pb-4 flex items-start justify-between shrink-0">
-          <div className="space-y-1.5">
-            <p className={`text-xl font-light tracking-wide ${accent}`}>{treasure.treasure_name}</p>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-0.5 rounded-full border ${accent} bg-slate-800/60 border-slate-700/50`}>
-                Lv.{treasure.level}
-              </span>
-              {treasure.act_category && (
-                <span className={`text-xs ${accent} opacity-60`}>
-                  {ACT_LABEL[treasure.act_category]}
+          <div className="flex items-center gap-4">
+            {/* 宝石アイコン */}
+            <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center p-2.5 shrink-0 ${GEM_BG[treasure.act_category ?? ""] ?? "bg-slate-800/50 border-slate-700/30"}`}>
+              <GemIcon act_category={treasure.act_category} />
+            </div>
+            <div className="space-y-1.5">
+              <p className={`text-lg font-light tracking-wide leading-snug ${accent}`}>{treasure.treasure_name}</p>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2 py-0.5 rounded-full border ${accent} bg-slate-800/60 border-slate-700/50`}>
+                  Lv.{treasure.level}
                 </span>
-              )}
-              <span className="text-xs text-slate-600">{treasure.sites.length}件の発掘場所</span>
+                {treasure.act_category && (
+                  <span className={`text-xs ${accent} opacity-60`}>
+                    {ACT_LABEL[treasure.act_category]}
+                  </span>
+                )}
+                <span className="text-xs text-slate-600">{treasure.sites.length}件の発掘場所</span>
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5">
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5 shrink-0">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
