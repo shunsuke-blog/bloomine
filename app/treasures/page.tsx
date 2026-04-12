@@ -149,20 +149,28 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
   );
 }
 
+function levelOpacity(level: number): number {
+  return Math.min(0.25 + (level - 1) * 0.08, 1.0);
+}
+
 function TreasureGridCard({ treasure, onClick }: { treasure: Treasure; onClick: () => void }) {
   const bg = GEM_BG[treasure.act_category ?? ""] ?? "bg-slate-800/30 border-slate-700/30";
   const accent = GEM_ACCENT[treasure.act_category ?? ""] ?? "text-amber-300";
+  const opacity = levelOpacity(treasure.level);
 
   return (
     <button
       onClick={onClick}
       className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:bg-slate-900 transition-all active:scale-95 w-full"
     >
-      <div className={`w-full aspect-square rounded-xl border flex items-center justify-center p-4 ${bg}`}>
+      <div
+        className={`w-full aspect-square rounded-xl border flex items-center justify-center p-4 ${bg}`}
+        style={{ opacity }}
+      >
         <GemIcon act_category={treasure.act_category} />
       </div>
       <div className="flex-1">
-        <p className={`text-sm font-light tracking-wide leading-snug line-clamp-2 ${accent}`}>
+        <p className={`text-sm font-light tracking-wide leading-snug line-clamp-2 ${accent}`} style={{ opacity }}>
           {treasure.treasure_name}
         </p>
       </div>

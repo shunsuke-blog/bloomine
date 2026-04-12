@@ -132,20 +132,28 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
   );
 }
 
+function levelOpacity(level: number): number {
+  return Math.min(0.25 + (level - 1) * 0.08, 1.0);
+}
+
 function FlowerGridCard({ flower, onClick }: { flower: Flower; onClick: () => void }) {
   const bg = FLOWER_BG[flower.via_category ?? ""] ?? "bg-slate-800/30 border-slate-700/30";
   const accent = FLOWER_ACCENT[flower.via_category ?? ""] ?? "text-slate-300";
+  const opacity = levelOpacity(flower.level);
 
   return (
     <button
       onClick={onClick}
       className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:bg-slate-900 transition-all active:scale-95 w-full"
     >
-      <div className={`w-full aspect-square rounded-xl border flex items-center justify-center p-4 ${bg}`}>
+      <div
+        className={`w-full aspect-square rounded-xl border flex items-center justify-center p-4 ${bg}`}
+        style={{ opacity }}
+      >
         <FlowerIcon via_category={flower.via_category} />
       </div>
       <div className="flex-1">
-        <p className={`text-sm font-light tracking-wide leading-snug line-clamp-2 ${accent}`}>
+        <p className={`text-sm font-light tracking-wide leading-snug line-clamp-2 ${accent}`} style={{ opacity }}>
           {flower.flower_name}
         </p>
       </div>
