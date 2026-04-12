@@ -157,7 +157,32 @@ export default function FlowersPage() {
   const [flowers, setFlowers] = useState<Flower[]>([]);
   const [selected, setSelected] = useState<Flower | null>(null);
   const [loading, setLoading] = useState(true);
+  const [backfilling, setBackfilling] = useState(false);
   const router = useRouter();
+
+  const hasUnclassified = flowers.some((f) => !f.via_category);
+  const [backfillMsg, setBackfillMsg] = useState<string | null>(null);
+
+  async function handleBackfill() {
+    setBackfilling(true);
+    setBackfillMsg(null);
+    try {
+      const res = await fetch("/api/backfill-categories", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setBackfillMsg(`エラー: ${json.error ?? res.status}`);
+        return;
+      }
+      setBackfillMsg(`完了: 花${json.flowers}件を分類しました`);
+      const r = await fetch("/api/flowers");
+      const data = await r.json();
+      if (Array.isArray(data)) setFlowers(data);
+    } catch (e) {
+      setBackfillMsg(`通信エラー: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBackfilling(false);
+    }
+  }
 
   useEffect(() => {
     void (async () => {
@@ -188,6 +213,21 @@ export default function FlowersPage() {
             <p className="text-xs text-slate-600 mt-1">積み重ねられた、あなたの性質たち</p>
           </div>
         </div>
+
+        {hasUnclassified && !loading && (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={handleBackfill}
+              disabled={backfilling}
+              className="text-xs text-slate-600 hover:text-slate-400 border border-slate-800 hover:border-slate-600 px-3 py-1.5 rounded-full transition-colors disabled:opacity-40"
+            >
+              {backfilling ? "分類中..." : "✦ デザインを割り当てる"}
+            </button>
+            {backfillMsg && (
+              <p className="text-xs text-slate-500">{backfillMsg}</p>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>
