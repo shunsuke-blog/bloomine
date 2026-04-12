@@ -5,6 +5,8 @@ import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT, ANALYZE_SYSTEM_PROMPT } 
 import { PROMPT_MAP } from "@/lib/messages";
 import { getAnalysisStatus } from "@/lib/subscription";
 import { RATE_LIMIT_MS } from "@/lib/constants";
+import { type FlowerFragment, type TreasureFragment } from "@/lib/analysis-types";
+import { calcLevelGain } from "@/lib/level-utils";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -92,17 +94,6 @@ export async function POST() {
     ]);
 
     // ── 強みの処理 ────────────────────────────────────────────────────────────
-    type FlowerFragment = {
-      roots: { log_index: number; root: string }[];
-      is_new_flower: boolean;
-      flower_id?: string;
-      flower_name?: string;
-      os_description?: string;
-      logic_reflection?: string;
-      environment_condition?: string;
-      via_category?: string;
-    };
-
     let flowerFragments: FlowerFragment[];
     try {
       const parsed = JSON.parse(flowerResult.response.text()) as { fragments: FlowerFragment[] };
@@ -112,7 +103,7 @@ export async function POST() {
       return NextResponse.json({ error: "強み分析結果の解析に失敗しました。再度お試しください。" }, { status: 422 });
     }
 
-    // 既存花のレベルを一括取得（N+1解消）
+    // 既存花のレベルを一括取得
     const existingFlowerIds = flowerFragments
       .filter(f => !f.is_new_flower && f.flower_id)
       .map(f => f.flower_id!);
@@ -121,10 +112,15 @@ export async function POST() {
       : { data: [] as { id: string; level: number }[] };
     const flowerLevelMap = new Map(existingFlowerLevels?.map(f => [f.id, f.level]) ?? []);
 
-    const flowerCache: Record<string, string> = {};
+    // Pass 1: 差分を集計（DB呼び出しなし）
+    type RootEntry = { log: typeof logs[0]; root: string };
+    type ExistingFlowerAccum = { totalGain: number; via_category?: string; roots: RootEntry[] };
+    type NewFlowerAccum = { fragment: FlowerFragment; totalGain: number; roots: RootEntry[] };
+
+    const existingFlowerAccum = new Map<string, ExistingFlowerAccum>();
+    const newFlowerAccum = new Map<string, NewFlowerAccum>();
     const newFlowerIdSet = new Set<string>();
     const analyzedFlowerIdSet = new Set<string>();
-    const allRootInserts: { user_id: string; flower_id: string; log_id: string; root: string }[] = [];
 
     for (const fragment of flowerFragments) {
       const rootEntries = (fragment.roots ?? [])
@@ -132,61 +128,73 @@ export async function POST() {
         .filter(r => r.log != null);
       if (rootEntries.length === 0) continue;
 
-      let flower_id: string;
-      const flowerLevelGain = Math.ceil(Math.sqrt(rootEntries.length));
+      const gain = calcLevelGain(rootEntries.length);
 
       if (!fragment.is_new_flower && fragment.flower_id) {
-        flower_id = fragment.flower_id;
-        const currentLevel = flowerLevelMap.get(flower_id) ?? 1;
-        await supabase
-          .from("flower_collection")
-          .update({
-            level: currentLevel + flowerLevelGain,
-            ...(fragment.via_category ? { via_category: fragment.via_category } : {}),
-          })
-          .eq("id", flower_id);
-        flowerLevelMap.set(flower_id, currentLevel + flowerLevelGain);
+        const acc = existingFlowerAccum.get(fragment.flower_id);
+        existingFlowerAccum.set(fragment.flower_id, {
+          totalGain: (acc?.totalGain ?? 0) + gain,
+          via_category: fragment.via_category ?? acc?.via_category,
+          roots: [...(acc?.roots ?? []), ...rootEntries],
+        });
+        analyzedFlowerIdSet.add(fragment.flower_id);
       } else {
         const name = fragment.flower_name ?? "名もなき強み";
-        if (flowerCache[name]) {
-          flower_id = flowerCache[name];
-          const currentLevel = flowerLevelMap.get(flower_id) ?? 1;
-          await supabase
-            .from("flower_collection")
-            .update({ level: currentLevel + flowerLevelGain })
-            .eq("id", flower_id);
-          flowerLevelMap.set(flower_id, currentLevel + flowerLevelGain);
-        } else {
-          const { data: newFlower, error: insertError } = await supabase
-            .from("flower_collection")
-            .insert({
-              user_id: user.id,
-              flower_name: name,
-              os_description: fragment.os_description ?? null,
-              logic_reflection: fragment.logic_reflection ?? null,
-              environment_condition: fragment.environment_condition ?? null,
-              via_category: fragment.via_category ?? null,
-              level: flowerLevelGain,
-            })
-            .select("id")
-            .single();
-          if (insertError || !newFlower) {
-            throw new Error(`花の作成に失敗しました: ${insertError?.message ?? "newFlower is null"}`);
-          }
-          flower_id = newFlower.id;
-          flowerCache[name] = flower_id;
-          flowerLevelMap.set(flower_id, flowerLevelGain);
-          newFlowerIdSet.add(flower_id);
-        }
-      }
-
-      analyzedFlowerIdSet.add(flower_id);
-      for (const { log, root } of rootEntries) {
-        allRootInserts.push({ user_id: user.id, flower_id, log_id: log.id, root });
+        const acc = newFlowerAccum.get(name);
+        newFlowerAccum.set(name, {
+          fragment: acc?.fragment ?? fragment,
+          totalGain: (acc?.totalGain ?? 0) + gain,
+          roots: [...(acc?.roots ?? []), ...rootEntries],
+        });
       }
     }
 
-    // root_elements を一括INSERT（N+1解消）
+    // Pass 2a: 既存花を並列UPDATE
+    await Promise.all(
+      [...existingFlowerAccum.entries()].map(([flower_id, { totalGain, via_category }]) =>
+        supabase.from("flower_collection").update({
+          level: (flowerLevelMap.get(flower_id) ?? 1) + totalGain,
+          ...(via_category ? { via_category } : {}),
+        }).eq("id", flower_id)
+      )
+    );
+
+    // Pass 2b: 新規花を並列INSERT
+    const newFlowerEntries = [...newFlowerAccum.entries()];
+    const insertedFlowers = await Promise.all(
+      newFlowerEntries.map(([, { fragment, totalGain }]) =>
+        supabase.from("flower_collection").insert({
+          user_id: user.id,
+          flower_name: fragment.flower_name ?? "名もなき強み",
+          os_description: fragment.os_description ?? null,
+          logic_reflection: fragment.logic_reflection ?? null,
+          environment_condition: fragment.environment_condition ?? null,
+          via_category: fragment.via_category ?? null,
+          level: totalGain,
+        }).select("id").single()
+      )
+    );
+
+    // root_elements を一括INSERT
+    const allRootInserts: { user_id: string; flower_id: string; log_id: string; root: string }[] = [];
+
+    for (const [flower_id, { roots }] of existingFlowerAccum) {
+      for (const { log, root } of roots) {
+        allRootInserts.push({ user_id: user.id, flower_id, log_id: log.id, root });
+      }
+    }
+    for (let i = 0; i < newFlowerEntries.length; i++) {
+      const { data: newFlower, error: insertError } = insertedFlowers[i];
+      if (insertError || !newFlower) {
+        throw new Error(`花の作成に失敗しました: ${insertError?.message ?? "newFlower is null"}`);
+      }
+      newFlowerIdSet.add(newFlower.id);
+      analyzedFlowerIdSet.add(newFlower.id);
+      for (const { log, root } of newFlowerEntries[i][1].roots) {
+        allRootInserts.push({ user_id: user.id, flower_id: newFlower.id, log_id: log.id, root });
+      }
+    }
+
     if (allRootInserts.length > 0) {
       const { error: rootInsertError } = await supabase.from("root_elements").insert(allRootInserts);
       if (rootInsertError) {
@@ -195,18 +203,6 @@ export async function POST() {
     }
 
     // ── 価値観の処理 ──────────────────────────────────────────────────────────
-    type TreasureFragment = {
-      sites: { log_index: number; site: string }[];
-      is_new_treasure: boolean;
-      treasure_id?: string;
-      treasure_name?: string;
-      description?: string;
-      keywords?: string[];
-      fulfillment_state?: string;
-      threat_signal?: string;
-      act_category?: string;
-    };
-
     let treasureFragments: TreasureFragment[];
     try {
       const parsed = JSON.parse(treasureResult.response.text()) as { fragments: TreasureFragment[] };
@@ -216,7 +212,7 @@ export async function POST() {
       return NextResponse.json({ error: "価値観分析結果の解析に失敗しました。再度お試しください。" }, { status: 422 });
     }
 
-    // 既存価値観のレベルを一括取得（N+1解消）
+    // 既存価値観のレベルを一括取得
     const existingTreasureIds = treasureFragments
       .filter(f => !f.is_new_treasure && f.treasure_id)
       .map(f => f.treasure_id!);
@@ -225,10 +221,15 @@ export async function POST() {
       : { data: [] as { id: string; level: number }[] };
     const treasureLevelMap = new Map(existingTreasureLevels?.map(t => [t.id, t.level]) ?? []);
 
-    const treasureCache: Record<string, string> = {};
+    // Pass 1: 差分を集計（DB呼び出しなし）
+    type SiteEntry = { log: typeof logs[0]; site: string };
+    type ExistingTreasureAccum = { totalGain: number; act_category?: string; sites: SiteEntry[] };
+    type NewTreasureAccum = { fragment: TreasureFragment; totalGain: number; sites: SiteEntry[] };
+
+    const existingTreasureAccum = new Map<string, ExistingTreasureAccum>();
+    const newTreasureAccum = new Map<string, NewTreasureAccum>();
     const newTreasureIdSet = new Set<string>();
     const analyzedTreasureIdSet = new Set<string>();
-    const allDigSiteInserts: { user_id: string; treasure_id: string; log_id: string; site: string }[] = [];
 
     for (const fragment of treasureFragments) {
       const siteEntries = (fragment.sites ?? [])
@@ -236,62 +237,74 @@ export async function POST() {
         .filter(s => s.log != null);
       if (siteEntries.length === 0) continue;
 
-      let treasure_id: string;
-      const treasureLevelGain = Math.ceil(Math.sqrt(siteEntries.length));
+      const gain = calcLevelGain(siteEntries.length);
 
       if (!fragment.is_new_treasure && fragment.treasure_id) {
-        treasure_id = fragment.treasure_id;
-        const currentLevel = treasureLevelMap.get(treasure_id) ?? 1;
-        await supabase
-          .from("treasure_collection")
-          .update({
-            level: currentLevel + treasureLevelGain,
-            ...(fragment.act_category ? { act_category: fragment.act_category } : {}),
-          })
-          .eq("id", treasure_id);
-        treasureLevelMap.set(treasure_id, currentLevel + treasureLevelGain);
+        const acc = existingTreasureAccum.get(fragment.treasure_id);
+        existingTreasureAccum.set(fragment.treasure_id, {
+          totalGain: (acc?.totalGain ?? 0) + gain,
+          act_category: fragment.act_category ?? acc?.act_category,
+          sites: [...(acc?.sites ?? []), ...siteEntries],
+        });
+        analyzedTreasureIdSet.add(fragment.treasure_id);
       } else {
         const name = fragment.treasure_name ?? "名もなき価値観";
-        if (treasureCache[name]) {
-          treasure_id = treasureCache[name];
-          const currentLevel = treasureLevelMap.get(treasure_id) ?? 1;
-          await supabase
-            .from("treasure_collection")
-            .update({ level: currentLevel + treasureLevelGain })
-            .eq("id", treasure_id);
-          treasureLevelMap.set(treasure_id, currentLevel + treasureLevelGain);
-        } else {
-          const { data: newTreasure, error: insertError } = await supabase
-            .from("treasure_collection")
-            .insert({
-              user_id: user.id,
-              treasure_name: name,
-              description: fragment.description ?? null,
-              keywords: fragment.keywords ?? [],
-              fulfillment_state: fragment.fulfillment_state ?? null,
-              threat_signal: fragment.threat_signal ?? null,
-              act_category: fragment.act_category ?? null,
-              level: treasureLevelGain,
-            })
-            .select("id")
-            .single();
-          if (insertError || !newTreasure) {
-            throw new Error(`価値観の作成に失敗しました: ${insertError?.message ?? "newTreasure is null"}`);
-          }
-          treasure_id = newTreasure.id;
-          treasureCache[name] = treasure_id;
-          treasureLevelMap.set(treasure_id, treasureLevelGain);
-          newTreasureIdSet.add(treasure_id);
-        }
-      }
-
-      analyzedTreasureIdSet.add(treasure_id);
-      for (const { log, site } of siteEntries) {
-        allDigSiteInserts.push({ user_id: user.id, treasure_id, log_id: log.id, site });
+        const acc = newTreasureAccum.get(name);
+        newTreasureAccum.set(name, {
+          fragment: acc?.fragment ?? fragment,
+          totalGain: (acc?.totalGain ?? 0) + gain,
+          sites: [...(acc?.sites ?? []), ...siteEntries],
+        });
       }
     }
 
-    // dig_sites を一括INSERT（N+1解消）
+    // Pass 2a: 既存価値観を並列UPDATE
+    await Promise.all(
+      [...existingTreasureAccum.entries()].map(([treasure_id, { totalGain, act_category }]) =>
+        supabase.from("treasure_collection").update({
+          level: (treasureLevelMap.get(treasure_id) ?? 1) + totalGain,
+          ...(act_category ? { act_category } : {}),
+        }).eq("id", treasure_id)
+      )
+    );
+
+    // Pass 2b: 新規価値観を並列INSERT
+    const newTreasureEntries = [...newTreasureAccum.entries()];
+    const insertedTreasures = await Promise.all(
+      newTreasureEntries.map(([, { fragment, totalGain }]) =>
+        supabase.from("treasure_collection").insert({
+          user_id: user.id,
+          treasure_name: fragment.treasure_name ?? "名もなき価値観",
+          description: fragment.description ?? null,
+          keywords: fragment.keywords ?? [],
+          fulfillment_state: fragment.fulfillment_state ?? null,
+          threat_signal: fragment.threat_signal ?? null,
+          act_category: fragment.act_category ?? null,
+          level: totalGain,
+        }).select("id").single()
+      )
+    );
+
+    // dig_sites を一括INSERT
+    const allDigSiteInserts: { user_id: string; treasure_id: string; log_id: string; site: string }[] = [];
+
+    for (const [treasure_id, { sites }] of existingTreasureAccum) {
+      for (const { log, site } of sites) {
+        allDigSiteInserts.push({ user_id: user.id, treasure_id, log_id: log.id, site });
+      }
+    }
+    for (let i = 0; i < newTreasureEntries.length; i++) {
+      const { data: newTreasure, error: insertError } = insertedTreasures[i];
+      if (insertError || !newTreasure) {
+        throw new Error(`価値観の作成に失敗しました: ${insertError?.message ?? "newTreasure is null"}`);
+      }
+      newTreasureIdSet.add(newTreasure.id);
+      analyzedTreasureIdSet.add(newTreasure.id);
+      for (const { log, site } of newTreasureEntries[i][1].sites) {
+        allDigSiteInserts.push({ user_id: user.id, treasure_id: newTreasure.id, log_id: log.id, site });
+      }
+    }
+
     if (allDigSiteInserts.length > 0) {
       const { error: digSiteInsertError } = await supabase.from("dig_sites").insert(allDigSiteInserts);
       if (digSiteInsertError) {
@@ -367,7 +380,7 @@ export async function POST() {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    console.error("Analyze Error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("POST /api/analyze error:", msg);
+    return NextResponse.json({ error: "分析中にエラーが発生しました。再度お試しください。" }, { status: 500 });
   }
 }

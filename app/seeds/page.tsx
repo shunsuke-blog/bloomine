@@ -6,6 +6,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
 import { FlowerIcon, FLOWER_BG, FLOWER_ACCENT } from "@/components/FlowerIcon";
+import { levelOpacity } from "@/lib/level-utils";
+import { VIA_LABEL } from "@/lib/categories";
 
 type Root = {
   id: string;
@@ -29,14 +31,6 @@ type Flower = {
   roots: Root[];
 };
 
-const VIA_LABEL: Record<string, string> = {
-  courage:       "勇気",
-  wisdom:        "知恵",
-  humanity:      "人間性",
-  justice:       "正義",
-  temperance:    "節制",
-  transcendence: "超越",
-};
 
 function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void }) {
   const [openRootId, setOpenRootId] = useState<string | null>(null);
@@ -130,10 +124,6 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
       </div>
     </div>
   );
-}
-
-function levelOpacity(level: number): number {
-  return Math.min(0.25 + (level - 1) * 0.08, 1.0);
 }
 
 function FlowerGridCard({ flower, onClick }: { flower: Flower; onClick: () => void }) {

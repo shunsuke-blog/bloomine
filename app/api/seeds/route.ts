@@ -18,22 +18,34 @@ export async function GET() {
 
     if (error) throw error;
 
-    // 各タネに対応する週のログを取得
-    const seedsWithLogs = await Promise.all(
-      (seeds ?? []).map(async (seed) => {
-        const { data: logs } = await supabase
+    // 全タネの週番号を一括で取得し、1クエリでログをまとめて取得
+    const weekNumbers = (seeds ?? []).map(s => s.week_number);
+    const { data: allLogs } = weekNumbers.length > 0
+      ? await supabase
           .from("daily_logs")
-          .select("id, transcript, emotion_score, created_at")
+          .select("id, transcript, emotion_score, created_at, week_number")
           .eq("user_id", user.id)
-          .eq("week_number", seed.week_number)
-          .order("created_at", { ascending: true });
+          .in("week_number", weekNumbers)
+          .order("created_at", { ascending: true })
+      : { data: [] as { id: string; transcript: string; emotion_score: number | null; created_at: string; week_number: number }[] };
 
-        return { ...seed, logs: logs ?? [] };
-      })
-    );
+    // week_number でグループ化
+    const logsByWeek = new Map<number, typeof allLogs>();
+    for (const log of allLogs ?? []) {
+      const group = logsByWeek.get(log.week_number) ?? [];
+      group.push(log);
+      logsByWeek.set(log.week_number, group);
+    }
+
+    const seedsWithLogs = (seeds ?? []).map(seed => ({
+      ...seed,
+      logs: logsByWeek.get(seed.week_number) ?? [],
+    }));
 
     return NextResponse.json(seedsWithLogs);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "サーバーエラーが発生しました";
+    console.error("GET /api/seeds error:", msg);
+    return NextResponse.json({ error: "サーバーエラーが発生しました" }, { status: 500 });
   }
 }

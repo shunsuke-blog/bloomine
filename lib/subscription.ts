@@ -64,7 +64,7 @@ export async function getAnalysisStatus(
   const totalLogsAtLastAnalysis = profileResult.data?.total_logs_at_last_analysis ?? 0;
   const totalLogsCount = logCountResult.count ?? 0;
 
-  const unanalyzedCount = totalLogsCount - totalLogsAtLastAnalysis;
+  const unanalyzedCount = Math.max(0, totalLogsCount - totalLogsAtLastAnalysis);
   const freeAnalysesLeft = Math.max(0, FREE_ANALYSIS_COUNT - totalAnalysesCount);
 
   const threshold = getAnalysisThreshold(totalAnalysesCount, isSubscribed);

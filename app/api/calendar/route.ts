@@ -43,7 +43,9 @@ export async function GET(req: Request) {
     ].sort();
 
     return NextResponse.json({ dates });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "サーバーエラーが発生しました";
+    console.error("GET /api/calendar error:", msg);
+    return NextResponse.json({ error: "サーバーエラーが発生しました" }, { status: 500 });
   }
 }

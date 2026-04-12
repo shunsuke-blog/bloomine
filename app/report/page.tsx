@@ -6,19 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
 import { GemIcon, GEM_BG, GEM_ACCENT } from "@/components/GemIcon";
-
-const ACT_LABEL: Record<string, string> = {
-  family:                "家族",
-  intimate_relationship: "親密な関係",
-  friendship:            "友人・社会関係",
-  spirituality:          "スピリチュアリティ",
-  work:                  "仕事",
-  learning:              "学習・成長",
-  leisure:               "余暇・趣味",
-  citizenship:           "市民性・社会貢献",
-  health:                "身体・健康",
-  parenting:             "子育て・愛情",
-};
+import { ACT_LABEL } from "@/lib/categories";
 
 type DigSite = {
   id: string;

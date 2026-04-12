@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { VIA_CATEGORIES, ACT_CATEGORIES } from "@/lib/categories";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -81,14 +82,16 @@ ${JSON.stringify(treasureList.map((t) => ({ id: t.id, name: t.treasure_name, des
       treasures: { id: string; act_category: string }[];
     };
 
-    // バリデーション用セット
-    const validVia = new Set(["wisdom", "courage", "humanity", "justice", "temperance", "transcendence"]);
-    const validAct = new Set(["family", "intimate_relationship", "friendship", "spirituality", "work", "learning", "leisure", "citizenship", "health", "parenting"]);
+    // バリデーション用型ガード
+    const validViaSet = new Set<string>(VIA_CATEGORIES);
+    const validActSet = new Set<string>(ACT_CATEGORIES);
+    const isValidVia = (v: string) => validViaSet.has(v);
+    const isValidAct = (v: string) => validActSet.has(v);
 
     // DB更新（並列・user_id 絞り込みで安全に）
     await Promise.all([
       ...(parsed.flowers ?? [])
-        .filter((f) => f.id && validVia.has(f.via_category))
+        .filter((f) => f.id && isValidVia(f.via_category))
         .map(({ id, via_category }) =>
           supabase
             .from("flower_collection")
@@ -97,7 +100,7 @@ ${JSON.stringify(treasureList.map((t) => ({ id: t.id, name: t.treasure_name, des
             .eq("user_id", user.id)
         ),
       ...(parsed.treasures ?? [])
-        .filter((t) => t.id && validAct.has(t.act_category))
+        .filter((t) => t.id && isValidAct(t.act_category))
         .map(({ id, act_category }) =>
           supabase
             .from("treasure_collection")
@@ -109,8 +112,8 @@ ${JSON.stringify(treasureList.map((t) => ({ id: t.id, name: t.treasure_name, des
 
     return NextResponse.json({
       message: "補完完了",
-      flowers: (parsed.flowers ?? []).filter((f) => validVia.has(f.via_category)).length,
-      treasures: (parsed.treasures ?? []).filter((t) => validAct.has(t.act_category)).length,
+      flowers: (parsed.flowers ?? []).filter((f) => isValidVia(f.via_category)).length,
+      treasures: (parsed.treasures ?? []).filter((t) => isValidAct(t.act_category)).length,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";

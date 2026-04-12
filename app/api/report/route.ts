@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
+import { VIA_CATEGORIES, type ViaCategory } from "@/lib/categories";
 
 export async function GET() {
   try {
@@ -23,7 +24,7 @@ export async function GET() {
     const [{ data: treasuresRaw }, { data: seeds }, { data: flowers }] = await Promise.all([
       supabase
         .from("treasure_collection")
-        .select("id, treasure_name, level, description, keywords, fulfillment_state, threat_signal, act_category")
+        .select("id, treasure_name, level, description, keywords, fulfillment_state, threat_signal, act_category, dig_sites(id, site, log_id, daily_logs(transcript, emotion_score, created_at))")
         .eq("user_id", user.id)
         .order("level", { ascending: false })
         .limit(5),
@@ -40,32 +41,22 @@ export async function GET() {
     ]);
 
     // VIA 6カテゴリ別にレベルを合計
-    const VIA_CATEGORIES = ["wisdom", "courage", "humanity", "justice", "temperance", "transcendence"] as const;
-    type ViaCategory = typeof VIA_CATEGORIES[number];
     const radarData = Object.fromEntries(VIA_CATEGORIES.map(c => [c, 0])) as Record<ViaCategory, number>;
     for (const f of flowers ?? []) {
       const cat = f.via_category as ViaCategory;
       if (cat in radarData) radarData[cat] += f.level;
     }
 
-    // 各価値観の dig_sites（発掘場所）と元ログを取得
-    const treasures = await Promise.all(
-      (treasuresRaw ?? []).map(async (treasure) => {
-        const { data: sites } = await supabase
-          .from("dig_sites")
-          .select("id, site, log_id, daily_logs(transcript, emotion_score, created_at)")
-          .eq("treasure_id", treasure.id)
-          .order("created_at", { ascending: true });
-        return { ...treasure, sites: sites ?? [] };
-      })
-    );
+    const treasures = (treasuresRaw ?? []).map(t => ({ ...t, sites: t.dig_sites ?? [] }));
 
     return NextResponse.json({
       pyramidValues: treasures,
       weeklySeeds: seeds ?? [],
       radarData,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "サーバーエラーが発生しました";
+    console.error("GET /api/report error:", msg);
+    return NextResponse.json({ error: "サーバーエラーが発生しました" }, { status: 500 });
   }
 }

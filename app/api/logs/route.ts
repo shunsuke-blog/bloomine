@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     const timezone = profile?.timezone ?? "Asia/Tokyo";
 
     const week_number = await getWeekNumber(supabase, user.id, timezone);
-    const { data: log } = await supabase
+    const { data: log, error: insertError } = await supabase
       .from("daily_logs")
       .insert({
         user_id: user.id,
@@ -65,10 +65,15 @@ export async function POST(req: Request) {
       .select("id")
       .single();
 
-    return NextResponse.json({ log_id: log?.id ?? null });
-  } catch (error: any) {
-    console.error("Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertError || !log) {
+      throw new Error(insertError?.message ?? "ログの保存に失敗しました");
+    }
+
+    return NextResponse.json({ log_id: log.id });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "サーバーエラーが発生しました";
+    console.error("POST /api/logs error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -100,7 +105,9 @@ export async function PUT(req: Request) {
 
     if (error) throw error;
     return NextResponse.json({ log_id });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "サーバーエラーが発生しました";
+    console.error("PUT /api/logs error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

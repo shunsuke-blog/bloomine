@@ -16,6 +16,12 @@ export async function POST(req: Request) {
     if (!message?.trim() || !subject?.trim()) {
       return NextResponse.json({ error: "件名と内容を入力してください" }, { status: 400 });
     }
+    if (subject.length > 200) {
+      return NextResponse.json({ error: "件名は200文字以内で入力してください" }, { status: 400 });
+    }
+    if (message.length > 5000) {
+      return NextResponse.json({ error: "内容は5000文字以内で入力してください" }, { status: 400 });
+    }
 
     const { error } = await resend.emails.send({
       from: "bloomine <noreply@bloomines.com>",
@@ -36,7 +42,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "サーバーエラーが発生しました";
+    console.error("POST /api/contact error:", msg);
+    return NextResponse.json({ error: "サーバーエラーが発生しました" }, { status: 500 });
   }
 }
