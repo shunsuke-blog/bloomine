@@ -20,10 +20,10 @@ export async function GET() {
       return NextResponse.json({ error: "アクセス権がありません" }, { status: 403 });
     }
 
-    const [{ data: treasures }, { data: seeds }, { data: flowers }] = await Promise.all([
+    const [{ data: treasuresRaw }, { data: seeds }, { data: flowers }] = await Promise.all([
       supabase
         .from("treasure_collection")
-        .select("id, treasure_name, level, description, fulfillment_state")
+        .select("id, treasure_name, level, description, keywords, fulfillment_state, threat_signal, act_category")
         .eq("user_id", user.id)
         .order("level", { ascending: false })
         .limit(5),
@@ -48,8 +48,20 @@ export async function GET() {
       if (cat in radarData) radarData[cat] += f.level;
     }
 
+    // 各価値観の dig_sites（発掘場所）と元ログを取得
+    const treasures = await Promise.all(
+      (treasuresRaw ?? []).map(async (treasure) => {
+        const { data: sites } = await supabase
+          .from("dig_sites")
+          .select("id, site, log_id, daily_logs(transcript, emotion_score, created_at)")
+          .eq("treasure_id", treasure.id)
+          .order("created_at", { ascending: true });
+        return { ...treasure, sites: sites ?? [] };
+      })
+    );
+
     return NextResponse.json({
-      pyramidValues: treasures ?? [],
+      pyramidValues: treasures,
       weeklySeeds: seeds ?? [],
       radarData,
     });
