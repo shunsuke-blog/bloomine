@@ -135,6 +135,19 @@ ${logs.map((l) => {
   return `Day${l.index + 1}（感情スコア: ${l.emotion_score ?? "未回答"}）\n${questionLine}${l.transcript}`;
 }).join("\n\n---\n\n")}
 
+## act_category の値
+各断片には必ず以下のいずれか1つを act_category として割り当てること:
+- "family"                … 家族
+- "intimate_relationship" … 親密な関係
+- "friendship"            … 友人・社会関係
+- "spirituality"          … スピリチュアリティ・意味
+- "work"                  … 仕事・キャリア
+- "learning"              … 学習・成長
+- "leisure"               … 余暇・趣味
+- "citizenship"           … 市民性・社会貢献
+- "health"                … 身体・健康
+- "parenting"             … 子育て・愛情・ケア
+
 ## 指示
 1. ログ全体を横断的に読み、繰り返し現れる価値観・際立つ価値観を洗い出す
 2. ACT価値観リストの領域を参照しながら価値観を言語化する
@@ -152,7 +165,8 @@ ${logs.map((l) => {
         { "log_index": 2, "site": "Day3でこの価値観が現れた場面の要約（50字以内）" }
       ],
       "is_new_treasure": false,
-      "treasure_id": "既存の価値観のUUID"
+      "treasure_id": "既存の価値観のUUID",
+      "act_category": "family"
     },
     {
       "sites": [
@@ -163,7 +177,8 @@ ${logs.map((l) => {
       "description": "ユーザーが大切にしている価値観の解説（150字以内）",
       "keywords": ["キーワード1", "キーワード2", "キーワード3"],
       "fulfillment_state": "この価値観が満たされているとき、ユーザーがどんな状態にあるかの具体的な記述（100字以内）",
-      "threat_signal": "この価値観が満たされていないとき、現れやすい感情や行動のサイン（100字以内）"
+      "threat_signal": "この価値観が満たされていないとき、現れやすい感情や行動のサイン（100字以内）",
+      "act_category": "work"
     }
   ]
 }`;

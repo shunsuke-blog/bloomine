@@ -12,7 +12,7 @@ export async function GET() {
     // 花一覧をレベル降順で取得
     const { data: flowers, error } = await supabase
       .from("flower_collection")
-      .select("id, flower_name, level, os_description, logic_reflection, environment_condition")
+      .select("id, flower_name, level, os_description, logic_reflection, environment_condition, via_category")
       .eq("user_id", user.id)
       .order("level", { ascending: false });
 

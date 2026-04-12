@@ -204,6 +204,7 @@ export async function POST() {
       keywords?: string[];
       fulfillment_state?: string;
       threat_signal?: string;
+      act_category?: string;
     };
 
     let treasureFragments: TreasureFragment[];
@@ -243,7 +244,10 @@ export async function POST() {
         const currentLevel = treasureLevelMap.get(treasure_id) ?? 1;
         await supabase
           .from("treasure_collection")
-          .update({ level: currentLevel + treasureLevelGain })
+          .update({
+            level: currentLevel + treasureLevelGain,
+            ...(fragment.act_category ? { act_category: fragment.act_category } : {}),
+          })
           .eq("id", treasure_id);
         treasureLevelMap.set(treasure_id, currentLevel + treasureLevelGain);
       } else {
@@ -266,6 +270,7 @@ export async function POST() {
               keywords: fragment.keywords ?? [],
               fulfillment_state: fragment.fulfillment_state ?? null,
               threat_signal: fragment.threat_signal ?? null,
+              act_category: fragment.act_category ?? null,
               level: treasureLevelGain,
             })
             .select("id")

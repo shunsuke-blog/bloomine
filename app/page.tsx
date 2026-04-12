@@ -643,6 +643,14 @@ export default function NightGreenhouse() {
         </div>
       )}
 
+      {/* 開発用: デザインプレビューへのリンク */}
+      <Link
+        href="/design-preview"
+        className="text-[10px] text-slate-800 hover:text-slate-600 transition-colors tracking-wider"
+      >
+        design preview
+      </Link>
+
       {/* オンボーディング */}
       {showOnboarding && (
         <Onboarding

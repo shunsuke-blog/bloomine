@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
+import { FlowerIcon, FLOWER_BG, FLOWER_ACCENT } from "@/components/FlowerIcon";
 
 type Root = {
   id: string;
@@ -24,42 +25,47 @@ type Flower = {
   os_description: string | null;
   logic_reflection: string | null;
   environment_condition: string | null;
+  via_category: string | null;
   roots: Root[];
+};
+
+const VIA_LABEL: Record<string, string> = {
+  courage:       "勇気",
+  wisdom:        "知恵",
+  humanity:      "人間性",
+  justice:       "正義",
+  temperance:    "節制",
+  transcendence: "超越",
 };
 
 function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void }) {
   const [openRootId, setOpenRootId] = useState<string | null>(null);
+  const accent = FLOWER_ACCENT[flower.via_category ?? ""] ?? "text-emerald-300";
+  const borderHover = flower.via_category ? "" : "border-emerald-900/40";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* 背景オーバーレイ */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* ボトムシート */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-slate-900 rounded-t-3xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* ドラッグハンドル */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-8 h-1 bg-slate-700 rounded-full" />
         </div>
-
-        {/* ヘッダー */}
         <div className="px-6 pt-3 pb-4 flex items-start justify-between shrink-0">
           <div className="space-y-1.5">
-            <p className="text-xl font-light text-emerald-300 tracking-wide">{flower.flower_name}</p>
+            <p className={`text-xl font-light tracking-wide ${accent}`}>{flower.flower_name}</p>
             <div className="flex items-center gap-2">
-              <span className="text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${accent} bg-slate-800/60 border-slate-700/50`}>
                 Lv.{flower.level}
               </span>
+              {flower.via_category && (
+                <span className={`text-xs ${accent} opacity-60`}>
+                  {VIA_LABEL[flower.via_category]}
+                </span>
+              )}
               <span className="text-xs text-slate-600">{flower.roots.length}件の根</span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5"
-          >
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -67,11 +73,10 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
           </button>
         </div>
 
-        {/* スクロールコンテンツ */}
         <div className="overflow-y-auto px-6 pb-10 space-y-5">
           {flower.os_description && (
             <div className="space-y-1.5">
-              <p className="text-xs text-emerald-700 tracking-wider">花の解説</p>
+              <p className={`text-xs tracking-wider ${accent} opacity-70`}>花の解説</p>
               <p className="text-sm text-slate-300 leading-relaxed">{flower.os_description}</p>
             </div>
           )}
@@ -87,7 +92,6 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
               <p className="text-sm text-slate-400 leading-relaxed">{flower.environment_condition}</p>
             </div>
           )}
-
           {flower.roots.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-slate-800/40">
               <p className="text-xs text-slate-600 tracking-wider mb-3">根っこ（証拠）</p>
@@ -95,7 +99,7 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
                 <div key={root.id} className="space-y-1">
                   <button
                     onClick={() => setOpenRootId(openRootId === root.id ? null : root.id)}
-                    className="w-full text-left p-3 bg-slate-950/60 border border-slate-800 rounded-xl hover:border-emerald-900/60 transition-colors"
+                    className={`w-full text-left p-3 bg-slate-950/60 border border-slate-800 rounded-xl hover:${borderHover} transition-colors`}
                   >
                     <p className="text-xs text-slate-400 leading-relaxed">{root.root}</p>
                     <p className="text-xs text-slate-700 mt-1">
@@ -103,15 +107,13 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
                     </p>
                   </button>
                   {openRootId === root.id && root.daily_logs && (
-                    <div className="ml-3 p-3 bg-slate-900/30 border-l border-emerald-900/40 rounded-r-xl">
+                    <div className="ml-3 p-3 bg-slate-900/30 border-l border-slate-700/40 rounded-r-xl">
                       {root.daily_logs.emotion_score !== null && (
                         <p className="text-xs text-slate-600 mb-1">
                           感情スコア: {root.daily_logs.emotion_score}/10
                         </p>
                       )}
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        {root.daily_logs.transcript}
-                      </p>
+                      <p className="text-xs text-slate-500 leading-relaxed">{root.daily_logs.transcript}</p>
                     </div>
                   )}
                 </div>
@@ -125,33 +127,24 @@ function FlowerModal({ flower, onClose }: { flower: Flower; onClose: () => void 
 }
 
 function FlowerGridCard({ flower, onClick }: { flower: Flower; onClick: () => void }) {
+  const bg = FLOWER_BG[flower.via_category ?? ""] ?? "bg-slate-800/30 border-slate-700/30";
+  const accent = FLOWER_ACCENT[flower.via_category ?? ""] ?? "text-slate-300";
+
   return (
     <button
       onClick={onClick}
-      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:border-emerald-800/50 hover:bg-slate-900 transition-all active:scale-95 w-full"
+      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:bg-slate-900 transition-all active:scale-95 w-full"
     >
-      {/* アイコンプレースホルダー */}
-      <div className="w-full aspect-square rounded-xl bg-emerald-950/30 border border-emerald-900/20 flex items-center justify-center">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-800">
-          <circle cx="12" cy="7.5" r="4.2" />
-          <circle cx="16.3" cy="10.6" r="4.2" />
-          <circle cx="14.6" cy="15.6" r="4.2" />
-          <circle cx="9.4" cy="15.6" r="4.2" />
-          <circle cx="7.7" cy="10.6" r="4.2" />
-          <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
-        </svg>
+      <div className={`w-full aspect-square rounded-xl border flex items-center justify-center p-4 ${bg}`}>
+        <FlowerIcon via_category={flower.via_category} />
       </div>
-
-      {/* タイトル */}
       <div className="flex-1">
-        <p className="text-sm font-light text-emerald-300 tracking-wide leading-snug line-clamp-2">
+        <p className={`text-sm font-light tracking-wide leading-snug line-clamp-2 ${accent}`}>
           {flower.flower_name}
         </p>
       </div>
-
-      {/* フッター */}
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[10px] bg-emerald-900/40 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded-full shrink-0">
+        <span className={`text-[10px] px-2 py-0.5 rounded-full border bg-slate-900/60 border-slate-700/50 ${accent} shrink-0`}>
           Lv.{flower.level}
         </span>
         <span className="text-[10px] text-slate-600 text-right">{flower.roots.length}件の根</span>
@@ -206,19 +199,13 @@ export default function FlowersPage() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {flowers.map((flower) => (
-              <FlowerGridCard
-                key={flower.id}
-                flower={flower}
-                onClick={() => setSelected(flower)}
-              />
+              <FlowerGridCard key={flower.id} flower={flower} onClick={() => setSelected(flower)} />
             ))}
           </div>
         )}
       </main>
 
-      {selected && (
-        <FlowerModal flower={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <FlowerModal flower={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }

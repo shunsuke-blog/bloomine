@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
+import { GemIcon, GEM_BG, GEM_ACCENT } from "@/components/GemIcon";
 
 type DigSite = {
   id: string;
@@ -25,42 +26,50 @@ type Treasure = {
   keywords: string[] | null;
   fulfillment_state: string | null;
   threat_signal: string | null;
+  act_category: string | null;
   sites: DigSite[];
+};
+
+const ACT_LABEL: Record<string, string> = {
+  family:                "家族",
+  intimate_relationship: "親密な関係",
+  friendship:            "友人・社会関係",
+  spirituality:          "スピリチュアリティ",
+  work:                  "仕事",
+  learning:              "学習・成長",
+  leisure:               "余暇・趣味",
+  citizenship:           "市民性・社会貢献",
+  health:                "身体・健康",
+  parenting:             "子育て・愛情",
 };
 
 function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () => void }) {
   const [openSiteId, setOpenSiteId] = useState<string | null>(null);
+  const accent = GEM_ACCENT[treasure.act_category ?? ""] ?? "text-amber-300";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* 背景オーバーレイ */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* ボトムシート */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-slate-900 rounded-t-3xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* ドラッグハンドル */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-8 h-1 bg-slate-700 rounded-full" />
         </div>
-
-        {/* ヘッダー */}
         <div className="px-6 pt-3 pb-4 flex items-start justify-between shrink-0">
           <div className="space-y-1.5">
-            <p className="text-xl font-light text-amber-300 tracking-wide">{treasure.treasure_name}</p>
+            <p className={`text-xl font-light tracking-wide ${accent}`}>{treasure.treasure_name}</p>
             <div className="flex items-center gap-2">
-              <span className="text-xs bg-amber-900/40 text-amber-400 border border-amber-800/50 px-2 py-0.5 rounded-full">
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${accent} bg-slate-800/60 border-slate-700/50`}>
                 Lv.{treasure.level}
               </span>
+              {treasure.act_category && (
+                <span className={`text-xs ${accent} opacity-60`}>
+                  {ACT_LABEL[treasure.act_category]}
+                </span>
+              )}
               <span className="text-xs text-slate-600">{treasure.sites.length}件の発掘場所</span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5"
-          >
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-400 transition-colors p-1 mt-0.5">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -68,23 +77,22 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
           </button>
         </div>
 
-        {/* スクロールコンテンツ */}
         <div className="overflow-y-auto px-6 pb-10 space-y-5">
           {treasure.description && (
             <div className="space-y-1.5">
-              <p className="text-xs text-amber-700 tracking-wider">宝物の解説</p>
+              <p className={`text-xs tracking-wider ${accent} opacity-70`}>宝物の解説</p>
               <p className="text-sm text-slate-300 leading-relaxed">{treasure.description}</p>
             </div>
           )}
           {treasure.fulfillment_state && (
             <div className="space-y-1.5">
-              <p className="text-xs text-amber-700 tracking-wider">✦ さらに光輝かせるために</p>
+              <p className="text-xs text-slate-600 tracking-wider">✦ さらに光輝かせるために</p>
               <p className="text-sm text-slate-300 leading-relaxed">{treasure.fulfillment_state}</p>
             </div>
           )}
           {treasure.threat_signal && (
             <div className="space-y-1.5">
-              <p className="text-xs text-amber-700 tracking-wider">⚠ 宝を失わないために</p>
+              <p className="text-xs text-slate-600 tracking-wider">⚠ 宝を失わないために</p>
               <p className="text-sm text-slate-300 leading-relaxed">{treasure.threat_signal}</p>
             </div>
           )}
@@ -93,17 +101,14 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
               <p className="text-xs text-slate-600 tracking-wider">キーワード</p>
               <div className="flex flex-wrap gap-2">
                 {treasure.keywords.map((kw, i) => (
-                  <span
-                    key={i}
-                    className="text-xs px-2 py-0.5 bg-amber-900/30 border border-amber-800/40 text-amber-400 rounded-full"
-                  >
+                  <span key={i}
+                    className={`text-xs px-2 py-0.5 bg-slate-800/60 border border-slate-700/50 rounded-full ${accent} opacity-80`}>
                     {kw}
                   </span>
                 ))}
               </div>
             </div>
           )}
-
           {treasure.sites.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-slate-800/40">
               <p className="text-xs text-slate-600 tracking-wider mb-3">発掘場所（証拠）</p>
@@ -111,7 +116,7 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
                 <div key={site.id} className="space-y-1">
                   <button
                     onClick={() => setOpenSiteId(openSiteId === site.id ? null : site.id)}
-                    className="w-full text-left p-3 bg-slate-950/60 border border-slate-800 rounded-xl hover:border-amber-900/60 transition-colors"
+                    className="w-full text-left p-3 bg-slate-950/60 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors"
                   >
                     <p className="text-xs text-slate-400 leading-relaxed">{site.site}</p>
                     <p className="text-xs text-slate-700 mt-1">
@@ -119,15 +124,13 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
                     </p>
                   </button>
                   {openSiteId === site.id && site.daily_logs && (
-                    <div className="ml-3 p-3 bg-slate-900/30 border-l border-amber-900/40 rounded-r-xl">
+                    <div className="ml-3 p-3 bg-slate-900/30 border-l border-slate-700/40 rounded-r-xl">
                       {site.daily_logs.emotion_score !== null && (
                         <p className="text-xs text-slate-600 mb-1">
                           感情スコア: {site.daily_logs.emotion_score}/10
                         </p>
                       )}
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        {site.daily_logs.transcript}
-                      </p>
+                      <p className="text-xs text-slate-500 leading-relaxed">{site.daily_logs.transcript}</p>
                     </div>
                   )}
                 </div>
@@ -141,30 +144,24 @@ function TreasureModal({ treasure, onClose }: { treasure: Treasure; onClose: () 
 }
 
 function TreasureGridCard({ treasure, onClick }: { treasure: Treasure; onClick: () => void }) {
+  const bg = GEM_BG[treasure.act_category ?? ""] ?? "bg-slate-800/30 border-slate-700/30";
+  const accent = GEM_ACCENT[treasure.act_category ?? ""] ?? "text-amber-300";
+
   return (
     <button
       onClick={onClick}
-      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:border-amber-800/50 hover:bg-slate-900 transition-all active:scale-95 w-full"
+      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 text-left hover:bg-slate-900 transition-all active:scale-95 w-full"
     >
-      {/* アイコンプレースホルダー */}
-      <div className="w-full aspect-square rounded-xl bg-amber-950/20 border border-amber-900/20 flex items-center justify-center">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-amber-800">
-          <path d="M6 3h12l4 6-10 12L2 9z" />
-          <line x1="2" y1="9" x2="22" y2="9" />
-          <polyline points="6 3 12 9 18 3" />
-        </svg>
+      <div className={`w-full aspect-square rounded-xl border flex items-center justify-center p-4 ${bg}`}>
+        <GemIcon act_category={treasure.act_category} />
       </div>
-
-      {/* タイトル */}
       <div className="flex-1">
-        <p className="text-sm font-light text-amber-300 tracking-wide leading-snug line-clamp-2">
+        <p className={`text-sm font-light tracking-wide leading-snug line-clamp-2 ${accent}`}>
           {treasure.treasure_name}
         </p>
       </div>
-
-      {/* フッター */}
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[10px] bg-amber-900/40 text-amber-400 border border-amber-800/50 px-2 py-0.5 rounded-full shrink-0">
+        <span className={`text-[10px] px-2 py-0.5 rounded-full border bg-slate-900/60 border-slate-700/50 ${accent} shrink-0`}>
           Lv.{treasure.level}
         </span>
         <span className="text-[10px] text-slate-600 text-right">{treasure.sites.length}件の発掘</span>
@@ -219,19 +216,13 @@ export default function TreasuresPage() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {treasures.map((treasure) => (
-              <TreasureGridCard
-                key={treasure.id}
-                treasure={treasure}
-                onClick={() => setSelected(treasure)}
-              />
+              <TreasureGridCard key={treasure.id} treasure={treasure} onClick={() => setSelected(treasure)} />
             ))}
           </div>
         )}
       </main>
 
-      {selected && (
-        <TreasureModal treasure={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <TreasureModal treasure={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
