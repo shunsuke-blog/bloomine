@@ -1,4 +1,5 @@
 // ACT VLQ カテゴリに対応した宝石SVGコンポーネント
+import React from "react";
 
 function GemDiamond() {
   // ダイヤモンド - 家族 (amber)
@@ -214,7 +215,7 @@ function GemDefault() {
   );
 }
 
-const GEM_MAP: Record<string, () => JSX.Element> = {
+const GEM_MAP: Record<string, () => React.ReactElement> = {
   family:                GemDiamond,
   intimate_relationship: GemBrilliant,
   friendship:            GemHexagon,

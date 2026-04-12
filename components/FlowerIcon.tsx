@@ -1,4 +1,5 @@
 // VIA カテゴリに対応した花SVGコンポーネント
+import React from "react";
 
 function FlowerCamellia() {
   // ツバキ - 勇気 (orange)
@@ -158,7 +159,7 @@ function FlowerDefault() {
   );
 }
 
-const FLOWER_MAP: Record<string, () => JSX.Element> = {
+const FLOWER_MAP: Record<string, () => React.ReactElement> = {
   courage:       FlowerCamellia,
   wisdom:        FlowerCrystal,
   humanity:      FlowerSakura,
