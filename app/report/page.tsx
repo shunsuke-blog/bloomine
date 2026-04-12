@@ -123,42 +123,15 @@ function RadarChart({ data }: { data: RadarData }) {
             : null
         ))}
 
-        {/* ラベル＋ⓘボタン */}
+        {/* ラベル */}
         {VIA_LABELS.map((v, i) => {
           const labelR = maxR + 28;
           const p = point(labelR, i);
-          // ⓘは日本語名の右横
-          const ix = p.x + 28;
-          const iy = p.y - 6;
-          const isActive = infoKey === v.key;
           return (
-            <g key={i}>
-              <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle">
-                <tspan x={p.x} dy="-6" fontSize="12" fill="rgba(226,232,240,0.85)" fontWeight="300">{v.label}</tspan>
-                <tspan x={p.x} dy="14" fontSize="8.5" fill="rgba(148,163,184,0.45)">{v.sub}</tspan>
-              </text>
-              {/* ⓘボタン */}
-              <g
-                onClick={() => setInfoKey(isActive ? null : v.key)}
-                style={{ cursor: "pointer" }}
-              >
-                <circle
-                  cx={ix} cy={iy} r="6"
-                  fill={isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)"}
-                  stroke="rgba(148,163,184,0.4)"
-                  strokeWidth="0.8"
-                />
-                <text
-                  x={ix} y={iy}
-                  textAnchor="middle" dominantBaseline="central"
-                  fontSize="8" fontWeight="700"
-                  fill="rgba(15,23,42,0.9)"
-                  style={{ userSelect: "none" }}
-                >
-                  i
-                </text>
-              </g>
-            </g>
+            <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle">
+              <tspan x={p.x} dy="-6" fontSize="12" fill="rgba(226,232,240,0.85)" fontWeight="300">{v.label}</tspan>
+              <tspan x={p.x} dy="14" fontSize="8.5" fill="rgba(148,163,184,0.45)">{v.sub}</tspan>
+            </text>
           );
         })}
       </svg>
@@ -170,6 +143,19 @@ function RadarChart({ data }: { data: RadarData }) {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 shrink-0" />
             <span className="text-[11px] text-slate-500 tracking-wide">{v.label}</span>
             <span className="text-[11px] text-slate-600 ml-1">{data[v.key]}</span>
+            <button
+              onClick={() => setInfoKey(infoKey === v.key ? null : v.key)}
+              className="ml-auto shrink-0"
+              aria-label={`${v.label}の解説`}
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6.5"
+                  fill={infoKey === v.key ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.75)"}
+                  stroke="rgba(148,163,184,0.4)" strokeWidth="0.8" />
+                <text x="7" y="7" textAnchor="middle" dominantBaseline="central"
+                  fontSize="8" fontWeight="700" fill="rgba(15,23,42,0.9)">i</text>
+              </svg>
+            </button>
           </div>
         ))}
       </div>
