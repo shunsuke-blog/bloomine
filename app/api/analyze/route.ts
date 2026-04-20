@@ -380,8 +380,10 @@ export async function POST() {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("POST /api/analyze error:", error);
-    // TODO: デバッグ後に汎用メッセージに戻す
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("POST /api/analyze error:", msg);
+    if (msg.includes("503") || msg.toLowerCase().includes("service unavailable") || msg.toLowerCase().includes("high demand")) {
+      return NextResponse.json({ error: "AI分析サービスが混雑しています。しばらく時間をおいて再度お試しください。" }, { status: 503 });
+    }
+    return NextResponse.json({ error: "分析中にエラーが発生しました。再度お試しください。" }, { status: 500 });
   }
 }
