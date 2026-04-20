@@ -379,8 +379,9 @@ export async function POST() {
       new_treasures: newTreasures,
     });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.error("POST /api/analyze error:", msg);
-    return NextResponse.json({ error: "分析中にエラーが発生しました。再度お試しください。" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/analyze error:", error);
+    // TODO: デバッグ後に汎用メッセージに戻す
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
