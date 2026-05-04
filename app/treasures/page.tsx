@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
 import { GemIcon, GEM_BG, GEM_ACCENT } from "@/components/GemIcon";
@@ -220,16 +220,8 @@ export default function TreasuresPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <main className="text-slate-200 px-4 py-6 pb-safe-nav sm:px-6 max-w-lg mx-auto space-y-6">
-        <div className="relative flex items-center justify-center pt-4">
-          <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
-            ← 戻る
-          </Link>
-          <div className="text-center">
-            <h1 className="text-xl font-light tracking-widest text-amber-400">価値観の宝庫</h1>
-            <p className="text-xs text-slate-600 mt-1">あなたが大切にしてきた、宝物たち</p>
-          </div>
-        </div>
+      <PageHeader title="価値観の宝庫" subtitle="あなたが大切にしてきた、宝物たち" titleClass="text-amber-400" />
+      <main className="text-slate-200 px-4 pt-safe-header pb-safe-nav sm:px-6 max-w-lg mx-auto space-y-6">
 
         {hasUnclassified && !loading && (
           <div className="flex flex-col items-center gap-2">

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
 import { GemIcon, GEM_BG, GEM_ACCENT } from "@/components/GemIcon";
@@ -428,29 +429,25 @@ export default function ReportPage() {
     })();
   }, [router]);
 
+  const calendarButton = (
+    <Link
+      href="/calendar"
+      className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+      aria-label="記録の足跡"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="3" y1="9" x2="21" y2="9" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+      </svg>
+    </Link>
+  );
+
   return (
     <div className="min-h-screen bg-slate-950">
-      <main className="text-slate-200 px-4 py-6 pb-safe-nav sm:px-6 max-w-lg mx-auto space-y-10">
-
-        {/* ヘッダー */}
-        <div className="relative flex items-center justify-center pt-4">
-          <div className="text-center">
-            <h1 className="text-xl font-light tracking-widest text-slate-200">成長レポート</h1>
-            <p className="text-xs text-slate-600 mt-1">あなたの内側に積み重なったもの</p>
-          </div>
-          <Link
-            href="/calendar"
-            className="absolute right-0 w-10 h-10 rounded-full flex items-center justify-center bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-            aria-label="記録の足跡"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-            </svg>
-          </Link>
-        </div>
+      <PageHeader title="成長レポート" subtitle="あなたの内側に積み重なったもの" right={calendarButton} />
+      <main className="text-slate-200 px-4 pt-safe-header pb-safe-nav sm:px-6 max-w-lg mx-auto space-y-10">
 
         {loading ? (
           <p className="text-slate-600 text-sm animate-pulse text-center py-12">読み込み中...</p>

@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/seeds",
-    label: "強みの庭",
+    label: "強み",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12"   cy="7.5"  r="4.2" />
@@ -32,7 +32,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/treasures",
-    label: "宝庫",
+    label: "価値観",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 3h12l4 6-10 12L2 9z" />

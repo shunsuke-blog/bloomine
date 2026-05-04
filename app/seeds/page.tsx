@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { hasAccessWithFreeTrial } from "@/lib/subscription";
 import { FlowerIcon, FLOWER_BG, FLOWER_ACCENT } from "@/components/FlowerIcon";
@@ -207,16 +207,8 @@ export default function FlowersPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <main className="text-slate-200 px-4 py-6 pb-safe-nav sm:px-6 max-w-lg mx-auto space-y-6">
-        <div className="relative flex items-center justify-center pt-4">
-          <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
-            ← 戻る
-          </Link>
-          <div className="text-center">
-            <h1 className="text-xl font-light tracking-widest text-emerald-400">強みの庭</h1>
-            <p className="text-xs text-slate-600 mt-1">積み重ねられた、あなたの性質たち</p>
-          </div>
-        </div>
+      <PageHeader title="強みの庭" subtitle="積み重ねられた、あなたの性質たち" titleClass="text-emerald-400" />
+      <main className="text-slate-200 px-4 pt-safe-header pb-safe-nav sm:px-6 max-w-lg mx-auto space-y-6">
 
         {hasUnclassified && !loading && (
           <div className="flex flex-col items-center gap-2">

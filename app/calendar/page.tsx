@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type DayLog = {
   id: string;
@@ -12,6 +13,7 @@ type DayLog = {
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 export default function CalendarPage() {
+  const router = useRouter();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1); // 1-indexed
@@ -103,9 +105,9 @@ export default function CalendarPage() {
 
       {/* ヘッダー */}
       <div className="w-full max-w-md flex items-center justify-between">
-        <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+        <button onClick={() => router.back()} className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
           ← 戻る
-        </Link>
+        </button>
         <h1 className="text-lg font-light tracking-widest text-emerald-400">記録の足跡</h1>
         <div className="w-14" />
       </div>
