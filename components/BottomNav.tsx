@@ -72,7 +72,10 @@ export default function BottomNav() {
   if (!SHOW_ON.has(pathname)) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 border-t border-slate-800 backdrop-blur-md">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 border-t border-slate-800 backdrop-blur-md"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       <div className="flex items-stretch justify-around max-w-lg mx-auto">
         {NAV_ITEMS.map(({ href, label, icon }) => {
           const active = pathname === href;
@@ -92,8 +95,6 @@ export default function BottomNav() {
           );
         })}
       </div>
-      {/* iPhoneのホームインジケータ対応 */}
-      <div className="h-safe-area-inset-bottom" />
     </nav>
   );
 }

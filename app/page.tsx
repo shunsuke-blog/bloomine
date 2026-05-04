@@ -242,7 +242,7 @@ export default function NightGreenhouse() {
     const xShareHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
 
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 pb-24 sm:px-6 gap-5">
+      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 pb-safe-nav sm:px-6 gap-5">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
 
         {/* 花が咲いた植物 */}
@@ -334,7 +334,7 @@ export default function NightGreenhouse() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 pb-24 sm:px-6 gap-5">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 pb-safe-nav sm:px-6 gap-5">
 
       {/* タイトル */}
       <div className="w-full max-w-md flex items-center justify-center">
