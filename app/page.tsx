@@ -242,7 +242,7 @@ export default function NightGreenhouse() {
     const xShareHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
 
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
+      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 pb-24 sm:px-6 gap-5">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
 
         {/* 花が咲いた植物 */}
@@ -334,80 +334,11 @@ export default function NightGreenhouse() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 pb-24 sm:px-6 gap-5">
 
       {/* タイトル */}
       <div className="w-full max-w-md flex items-center justify-center">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">心の土壌</h1>
-      </div>
-
-      {/* ナビゲーション行: カレンダー / 価値観の宝庫 / 強みの庭 / レポート / 設定 */}
-      <div className="flex items-center gap-2">
-        <Link
-          href="/calendar"
-          data-onboarding="calendar-button"
-          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="記録の足跡"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-          </svg>
-        </Link>
-        <Link
-          href="/treasures"
-          data-onboarding="treasures-button"
-          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="価値観の宝庫"
-        >
-          {/* ダイヤモンドアイコン */}
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 3h12l4 6-10 12L2 9z" />
-            <line x1="2" y1="9" x2="22" y2="9" />
-            <polyline points="6 3 12 9 18 3" />
-          </svg>
-        </Link>
-        <Link
-          href="/seeds"
-          data-onboarding="seeds-button"
-          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="強みの庭"
-        >
-          {/* 花アイコン（5枚花びら） */}
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12"   cy="7.5"  r="4.2" />
-            <circle cx="16.3" cy="10.6" r="4.2" />
-            <circle cx="14.6" cy="15.6" r="4.2" />
-            <circle cx="9.4"  cy="15.6" r="4.2" />
-            <circle cx="7.7"  cy="10.6" r="4.2" />
-            <circle cx="12"   cy="12"   r="3.5" fill="currentColor" stroke="none" />
-          </svg>
-        </Link>
-        <Link
-          href="/report"
-          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="成長レポート"
-        >
-          {/* 棒グラフアイコン */}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6"  y1="20" x2="6"  y2="14" />
-            <line x1="2"  y1="20" x2="22" y2="20" />
-          </svg>
-        </Link>
-        <Link
-          href="/settings"
-          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
-          aria-label="設定"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-        </Link>
       </div>
 
       {/* ログカウント（進捗ランプ）— 常にレンダリングしてレイアウトシフトを防ぐ */}

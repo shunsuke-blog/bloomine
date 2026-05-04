@@ -220,7 +220,7 @@ export default function TreasuresPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
+      <main className="text-slate-200 px-4 py-6 pb-28 sm:px-6 max-w-lg mx-auto space-y-6">
         <div className="relative flex items-center justify-center pt-4">
           <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
             ← 戻る

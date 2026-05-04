@@ -430,17 +430,26 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <main className="text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-10">
+      <main className="text-slate-200 px-4 py-6 pb-28 sm:px-6 max-w-lg mx-auto space-y-10">
 
         {/* ヘッダー */}
         <div className="relative flex items-center justify-center pt-4">
-          <Link href="/" className="absolute left-0 text-xs text-slate-600 hover:text-slate-400 transition-colors">
-            ← 戻る
-          </Link>
           <div className="text-center">
             <h1 className="text-xl font-light tracking-widest text-slate-200">成長レポート</h1>
             <p className="text-xs text-slate-600 mt-1">あなたの内側に積み重なったもの</p>
           </div>
+          <Link
+            href="/calendar"
+            className="absolute right-0 w-10 h-10 rounded-full flex items-center justify-center bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+            aria-label="記録の足跡"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+            </svg>
+          </Link>
         </div>
 
         {loading ? (
